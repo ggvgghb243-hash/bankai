@@ -736,19 +736,6 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     _tv=[[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStylePlain];
     _tv.translatesAutoresizingMaskIntoConstraints=NO;_tv.backgroundColor=UIColor.clearColor;
     _tv.separatorStyle=0;_tv.dataSource=self;_tv.delegate=self;[self.view addSubview:_tv];
-    // Remove buttons
-    UIButton*rm1=[UIButton buttonWithType:UIButtonTypeSystem];rm1.translatesAutoresizingMaskIntoConstraints=NO;
-    [rm1 setTitle:@"RESTORE 1" forState:0];[rm1 setTitleColor:ZXRed forState:0];
-    rm1.titleLabel.font=[UIFont systemFontOfSize:11 weight:UIFontWeightBold];
-    rm1.backgroundColor=ZXRedDim;rm1.layer.cornerRadius=10;rm1.layer.borderWidth=.7;
-    rm1.layer.borderColor=ZXRed.CGColor;rm1.tag=1;
-    [rm1 addTarget:self action:@selector(rmTap:) forControlEvents:UIControlEventTouchUpInside];[self.view addSubview:rm1];
-    UIButton*rm2=[UIButton buttonWithType:UIButtonTypeSystem];rm2.translatesAutoresizingMaskIntoConstraints=NO;
-    [rm2 setTitle:@"RESTORE 2" forState:0];[rm2 setTitleColor:ZXRed forState:0];
-    rm2.titleLabel.font=[UIFont systemFontOfSize:11 weight:UIFontWeightBold];
-    rm2.backgroundColor=ZXRedDim;rm2.layer.cornerRadius=10;rm2.layer.borderWidth=.7;
-    rm2.layer.borderColor=ZXRed.CGColor;rm2.tag=2;
-    [rm2 addTarget:self action:@selector(rmTap:) forControlEvents:UIControlEventTouchUpInside];[self.view addSubview:rm2];
     // Tab bar
     UIView*tabBar=[[UIView alloc]init];tabBar.translatesAutoresizingMaskIntoConstraints=NO;
     tabBar.backgroundColor=[UIColor colorWithWhite:.03 alpha:.95];
@@ -815,15 +802,7 @@ static void ZXRedGlow(UIView*v,CGFloat r){
         [_tv.topAnchor constraintEqualToAnchor:slhdr.bottomAnchor constant:6],
         [_tv.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:14],
         [_tv.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-14],
-        [_tv.bottomAnchor constraintEqualToAnchor:rm1.topAnchor constant:-8],
-        [rm1.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:14],
-        [rm1.trailingAnchor constraintEqualToAnchor:self.view.centerXAnchor constant:-5],
-        [rm1.bottomAnchor constraintEqualToAnchor:tabBar.topAnchor constant:-8],
-        [rm1.heightAnchor constraintEqualToConstant:36],
-        [rm2.leadingAnchor constraintEqualToAnchor:self.view.centerXAnchor constant:5],
-        [rm2.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-14],
-        [rm2.bottomAnchor constraintEqualToAnchor:tabBar.topAnchor constant:-8],
-        [rm2.heightAnchor constraintEqualToConstant:36],
+        [_tv.bottomAnchor constraintEqualToAnchor:tabBar.topAnchor constant:-4],
         [tabBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
         [tabBar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
         [tabBar.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
