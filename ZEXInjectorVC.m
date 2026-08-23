@@ -264,6 +264,42 @@ static UIImage* ZXFixOrientation(UIImage* src) {
 -(void)swCh:(UISwitch*)s{if(self.onToggle)self.onToggle(s.isOn);}
 @end
 
+// ── Cyber Helper for Particles & 3D HUD Rings ─────────────────────
+static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
+    CAShapeLayer *r1 = [CAShapeLayer layer];
+    r1.frame = CGRectMake(center.x - radius, center.y - radius, radius * 2, radius * 2);
+    UIBezierPath *p1 = [UIBezierPath bezierPathWithOvalInRect:r1.bounds];
+    r1.path = p1.CGPath;
+    r1.fillColor = UIColor.clearColor.CGColor;
+    r1.strokeColor = [UIColor colorWithRed:1.0 green:0.1 blue:0.25 alpha:0.35].CGColor;
+    r1.lineWidth = 1.5;
+    r1.lineDashPattern = @[@12, @6, @4, @6];
+    [container.layer addSublayer:r1];
+    
+    CABasicAnimation *rot1 = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
+    rot1.toValue = @(M_PI * 2);
+    rot1.duration = 14;
+    rot1.repeatCount = HUGE_VALF;
+    [r1 addAnimation:rot1 forKey:@"r1"];
+    
+    CGFloat r2_rad = radius * 0.72;
+    CAShapeLayer *r2 = [CAShapeLayer layer];
+    r2.frame = CGRectMake(center.x - r2_rad, center.y - r2_rad, r2_rad * 2, r2_rad * 2);
+    UIBezierPath *p2 = [UIBezierPath bezierPathWithOvalInRect:r2.bounds];
+    r2.path = p2.CGPath;
+    r2.fillColor = UIColor.clearColor.CGColor;
+    r2.strokeColor = [UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.22].CGColor;
+    r2.lineWidth = 1.0;
+    r2.lineDashPattern = @[@20, @10, @8, @10];
+    [container.layer addSublayer:r2];
+    
+    CABasicAnimation *rot2 = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
+    rot2.toValue = @(-M_PI * 2);
+    rot2.duration = 10;
+    rot2.repeatCount = HUGE_VALF;
+    [r2 addAnimation:rot2 forKey:@"r2"];
+}
+
 // ── ZXAuthVC ──────────────────────────────────────────────────────
 @interface ZXAuthVC : UIViewController
 @property (copy) void(^onAuth)(void);
@@ -271,106 +307,202 @@ static UIImage* ZXFixOrientation(UIImage* src) {
 @implementation ZXAuthVC{UITextField*_f;UILabel*_msg;UIButton*_btn;UIActivityIndicatorView*_sp;}
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
 -(void)viewDidLoad{
-    [super viewDidLoad];self.view.backgroundColor=ZXBg;
-    // Gradient
+    [super viewDidLoad];self.view.backgroundColor=[UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:1.0];
+    
     CAGradientLayer*g=[CAGradientLayer layer];g.frame=self.view.bounds;
-    g.colors=@[(id)[UIColor colorWithRed:.15 green:0 blue:.03 alpha:1].CGColor,(id)ZXBg.CGColor];
-    g.locations=@[@0,@.4];[self.view.layer insertSublayer:g atIndex:0];
-    // Particles
+    g.colors=@[(id)[UIColor colorWithRed:.20 green:.01 blue:.04 alpha:1].CGColor,(id)[UIColor colorWithRed:.03 green:.01 blue:.02 alpha:1].CGColor];
+    g.locations=@[@0,@.6];[self.view.layer insertSublayer:g atIndex:0];
+    
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(4,4),NO,0);
-    CGContextSetFillColorWithColor(UIGraphicsGetCurrentContext(),ZXRed.CGColor);
+    CGContextSetFillColorWithColor(UIGraphicsGetCurrentContext(),[UIColor colorWithRed:1.0 green:0.15 blue:0.3 alpha:0.9].CGColor);
     CGContextFillEllipseInRect(UIGraphicsGetCurrentContext(),CGRectMake(0,0,4,4));
     UIImage*dot=UIGraphicsGetImageFromCurrentImageContext();UIGraphicsEndImageContext();
+    
     CAEmitterLayer*el=[CAEmitterLayer layer];
     el.emitterPosition=CGPointMake(UIScreen.mainScreen.bounds.size.width/2,-10);
     el.emitterSize=CGSizeMake(UIScreen.mainScreen.bounds.size.width,0);
     el.emitterShape=kCAEmitterLayerLine;
     CAEmitterCell*ec=[CAEmitterCell emitterCell];
-    ec.contents=(id)dot.CGImage;ec.birthRate=5;ec.lifetime=7;
-    ec.velocity=32;ec.velocityRange=12;ec.emissionRange=M_PI/8;
-    ec.scale=1;ec.scaleRange=.5;ec.alphaRange=.4;ec.alphaSpeed=-.06;
+    ec.contents=(id)dot.CGImage;ec.birthRate=7;ec.lifetime=7;
+    ec.velocity=32;ec.velocityRange=14;ec.emissionRange=M_PI/8;
+    ec.scale=1.1;ec.scaleRange=.5;ec.alphaRange=.4;ec.alphaSpeed=-.05;
     el.emitterCells=@[ec];[self.view.layer addSublayer:el];
-    // UI
+    
+    CGPoint centerPt = CGPointMake(UIScreen.mainScreen.bounds.size.width/2, UIScreen.mainScreen.bounds.size.height/2 - 130);
+    ZXAddCyberRings(self.view, centerPt, 110);
+    
     UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
     NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
     [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,3)];
     [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(3,9)];
     [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:34 weight:UIFontWeightHeavy] range:NSMakeRange(0,12)];
-    logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;[self.view addSubview:logo];
-    UIView*card=ZXGlassView(16);card.translatesAutoresizingMaskIntoConstraints=NO;
-    card.layer.borderColor=ZXRed.CGColor;ZXRedGlow(card,12);[self.view addSubview:card];
+    [as addAttribute:NSKernAttributeName value:@2.5 range:NSMakeRange(0,12)];
+    logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
+    logo.layer.shadowColor=ZXRed.CGColor;logo.layer.shadowOffset=CGSizeZero;
+    logo.layer.shadowRadius=18;logo.layer.shadowOpacity=0.9;
+    [self.view addSubview:logo];
+    
+    UIView*badge=[UIView new];badge.translatesAutoresizingMaskIntoConstraints=NO;
+    badge.backgroundColor=[UIColor colorWithRed:0.25 green:0.02 blue:0.06 alpha:0.8];
+    badge.layer.cornerRadius=10;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.6].CGColor;
+    badge.layer.borderWidth=0.8;[self.view addSubview:badge];
+    UILabel*badgeLbl=[UILabel new];badgeLbl.translatesAutoresizingMaskIntoConstraints=NO;
+    badgeLbl.text=@"🔒 SECURITY CLEARANCE REQUIRED";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
+    badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.35 blue:0.5 alpha:1.0];[badge addSubview:badgeLbl];
+    
+    UIView*card=ZXGlassView(18);card.translatesAutoresizingMaskIntoConstraints=NO;
+    card.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.38 alpha:0.8].CGColor;
+    card.layer.borderWidth=1.2;
+    card.layer.shadowColor=[UIColor colorWithRed:1.0 green:0.1 blue:0.3 alpha:1.0].CGColor;
+    card.layer.shadowOffset=CGSizeZero;card.layer.shadowRadius=15;card.layer.shadowOpacity=0.85;
+    card.backgroundColor=[UIColor colorWithRed:0.10 green:0.015 blue:0.04 alpha:0.9];
+    [self.view addSubview:card];
+    
+    dispatch_async(dispatch_get_main_queue(),^{
+        CAGradientLayer*sw=[CAGradientLayer layer];sw.frame=CGRectMake(0,0,200,1.5);
+        sw.colors=@[(id)[UIColor clearColor].CGColor,(id)ZXRed.CGColor,(id)[UIColor clearColor].CGColor];
+        sw.startPoint=CGPointMake(0,.5);sw.endPoint=CGPointMake(1,.5);
+        [card.layer addSublayer:sw];
+        CABasicAnimation*a=[CABasicAnimation animationWithKeyPath:@"position.x"];
+        a.fromValue=@(-100);a.toValue=@(UIScreen.mainScreen.bounds.size.width+100);
+        a.duration=3.5;a.repeatCount=HUGE_VALF;[sw addAnimation:a forKey:@"s"];
+    });
+    
     UILabel*lbl=[UILabel new];lbl.translatesAutoresizingMaskIntoConstraints=NO;
-    lbl.text=@"LICENSE KEY";lbl.font=[UIFont systemFontOfSize:10 weight:UIFontWeightBold];
-    lbl.textColor=[UIColor colorWithWhite:1 alpha:.3];[card addSubview:lbl];
+    lbl.text=@"ENTER LICENSE KEY";lbl.font=[UIFont monospacedSystemFontOfSize:10 weight:UIFontWeightBold];
+    lbl.textColor=[UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:0.9];[card addSubview:lbl];
+    
+    UILabel*hwidLbl=[UILabel new];hwidLbl.translatesAutoresizingMaskIntoConstraints=NO;
+    hwidLbl.text=@"HWID: LOCKED";hwidLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
+    hwidLbl.textColor=[UIColor colorWithWhite:1 alpha:0.25];[card addSubview:hwidLbl];
+    
+    UIView*inBox=[UIView new];inBox.translatesAutoresizingMaskIntoConstraints=NO;
+    inBox.backgroundColor=[UIColor colorWithWhite:0 alpha:0.5];
+    inBox.layer.cornerRadius=10;inBox.layer.borderWidth=0.8;
+    inBox.layer.borderColor=[UIColor colorWithWhite:1 alpha:0.1].CGColor;
+    [card addSubview:inBox];
+    
     _f=[UITextField new];_f.translatesAutoresizingMaskIntoConstraints=NO;
     _f.textColor=UIColor.whiteColor;_f.textAlignment=NSTextAlignmentCenter;
-    _f.font=[UIFont monospacedSystemFontOfSize:15 weight:UIFontWeightMedium];
+    _f.font=[UIFont monospacedSystemFontOfSize:15 weight:UIFontWeightBold];
     _f.autocorrectionType=UITextAutocorrectionTypeNo;
     _f.autocapitalizationType=UITextAutocapitalizationTypeAllCharacters;
     _f.keyboardAppearance=UIKeyboardAppearanceDark;
     _f.attributedPlaceholder=[[NSAttributedString alloc]initWithString:@"ZEX-XXXX-XXXX-XXXX"
-        attributes:@{NSForegroundColorAttributeName:[UIColor colorWithWhite:.3 alpha:1]}];
-    [card addSubview:_f];
+        attributes:@{NSForegroundColorAttributeName:[UIColor colorWithWhite:.35 alpha:1],
+                     NSFontAttributeName:[UIFont monospacedSystemFontOfSize:13 weight:UIFontWeightMedium]}];
+    [inBox addSubview:_f];
+    
+    UIButton*pasteBtn=[UIButton buttonWithType:UIButtonTypeSystem];pasteBtn.translatesAutoresizingMaskIntoConstraints=NO;
+    [pasteBtn setTitle:@"PASTE" forState:0];[pasteBtn setTitleColor:[UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:0.8] forState:0];
+    pasteBtn.titleLabel.font=[UIFont monospacedSystemFontOfSize:10 weight:UIFontWeightBold];
+    [pasteBtn addTarget:self action:@selector(pasteKey) forControlEvents:UIControlEventTouchUpInside];
+    [inBox addSubview:pasteBtn];
+    
     _btn=[UIButton buttonWithType:UIButtonTypeSystem];_btn.translatesAutoresizingMaskIntoConstraints=NO;
-    [_btn setTitle:@"ACTIVATE" forState:0];[_btn setTitleColor:UIColor.whiteColor forState:0];
-    _btn.titleLabel.font=[UIFont systemFontOfSize:13 weight:UIFontWeightBold];
-    _btn.backgroundColor=ZXRed;_btn.layer.cornerRadius=14;ZXRedGlow(_btn,10);
-    [_btn addTarget:self action:@selector(activate) forControlEvents:UIControlEventTouchUpInside];[self.view addSubview:_btn];
+    [_btn setTitle:@"⚡ INITIATE ACCESS" forState:0];[_btn setTitleColor:UIColor.whiteColor forState:0];
+    _btn.titleLabel.font=[UIFont systemFontOfSize:14 weight:UIFontWeightHeavy];
+    _btn.backgroundColor=ZXRed;_btn.layer.cornerRadius=14;
+    _btn.layer.shadowColor=ZXRed.CGColor;
+    _btn.layer.shadowOffset=CGSizeZero;_btn.layer.shadowRadius=14;_btn.layer.shadowOpacity=0.9;
+    [_btn addTarget:self action:@selector(activate) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:_btn];
+    
     _msg=[UILabel new];_msg.translatesAutoresizingMaskIntoConstraints=NO;
-    _msg.textAlignment=NSTextAlignmentCenter;_msg.font=[UIFont systemFontOfSize:13];
+    _msg.textAlignment=NSTextAlignmentCenter;_msg.font=[UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightMedium];
     _msg.numberOfLines=2;[self.view addSubview:_msg];
+    
     _sp=[[UIActivityIndicatorView alloc]initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
     _sp.translatesAutoresizingMaskIntoConstraints=NO;_sp.color=ZXRed;_sp.hidesWhenStopped=YES;[self.view addSubview:_sp];
+    
+    UILabel*foot=[UILabel new];foot.translatesAutoresizingMaskIntoConstraints=NO;
+    foot.text=@"STATUS: ENCRYPTED • TLS-AES256 • PROTOCOL READY";
+    foot.font=[UIFont monospacedSystemFontOfSize:8 weight:UIFontWeightMedium];
+    foot.textColor=[UIColor colorWithWhite:1 alpha:0.2];foot.textAlignment=NSTextAlignmentCenter;
+    [self.view addSubview:foot];
+    
     [NSLayoutConstraint activateConstraints:@[
         [logo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [logo.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-110],
-        [card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:24],
-        [card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-24],
-        [card.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:32],
+        [logo.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-130],
+        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:10],
+        [badge.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
+        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
+        [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
+        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
+        
+        [card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:22],
+        [card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-22],
+        [card.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:26],
+        
         [lbl.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
-        [lbl.topAnchor constraintEqualToAnchor:card.topAnchor constant:16],
-        [_f.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
-        [_f.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
-        [_f.topAnchor constraintEqualToAnchor:lbl.bottomAnchor constant:8],
-        [_f.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-16],
-        [_f.heightAnchor constraintEqualToConstant:44],
+        [lbl.topAnchor constraintEqualToAnchor:card.topAnchor constant:14],
+        [hwidLbl.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
+        [hwidLbl.centerYAnchor constraintEqualToAnchor:lbl.centerYAnchor],
+        
+        [inBox.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:12],
+        [inBox.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-12],
+        [inBox.topAnchor constraintEqualToAnchor:lbl.bottomAnchor constant:10],
+        [inBox.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-14],
+        [inBox.heightAnchor constraintEqualToConstant:46],
+        
+        [_f.leadingAnchor constraintEqualToAnchor:inBox.leadingAnchor constant:10],
+        [_f.trailingAnchor constraintEqualToAnchor:pasteBtn.leadingAnchor constant:-6],
+        [_f.topAnchor constraintEqualToAnchor:inBox.topAnchor],
+        [_f.bottomAnchor constraintEqualToAnchor:inBox.bottomAnchor],
+        
+        [pasteBtn.trailingAnchor constraintEqualToAnchor:inBox.trailingAnchor constant:-10],
+        [pasteBtn.centerYAnchor constraintEqualToAnchor:inBox.centerYAnchor],
+        [pasteBtn.widthAnchor constraintEqualToConstant:50],
+        
         [_btn.leadingAnchor constraintEqualToAnchor:card.leadingAnchor],
         [_btn.trailingAnchor constraintEqualToAnchor:card.trailingAnchor],
-        [_btn.topAnchor constraintEqualToAnchor:card.bottomAnchor constant:14],
+        [_btn.topAnchor constraintEqualToAnchor:card.bottomAnchor constant:16],
         [_btn.heightAnchor constraintEqualToConstant:52],
+        
         [_msg.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [_msg.topAnchor constraintEqualToAnchor:_btn.bottomAnchor constant:14],
         [_msg.leadingAnchor constraintEqualToAnchor:card.leadingAnchor],
         [_msg.trailingAnchor constraintEqualToAnchor:card.trailingAnchor],
+        
         [_sp.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [_sp.topAnchor constraintEqualToAnchor:_msg.bottomAnchor constant:8],
+        [_sp.topAnchor constraintEqualToAnchor:_msg.bottomAnchor constant:6],
+        
+        [foot.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [foot.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-12],
     ]];
+}
+-(void)pasteKey{
+    NSString*pb=[UIPasteboard generalPasteboard].string;
+    if(pb.length){
+        _f.text=[pb stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet].uppercaseString;
+    }
 }
 -(void)activate{
     NSString*key=[_f.text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet].uppercaseString;
-    if(!key.length){_msg.text=@"Enter your key";_msg.textColor=[UIColor systemYellowColor];return;}
+    if(!key.length){_msg.text=@"> Error: Enter license key";_msg.textColor=[UIColor systemYellowColor];return;}
     if([key isEqualToString:@"ZEX-MASTER-9999-ROOT"]){
         [[NSUserDefaults standardUserDefaults]setObject:key forKey:kSavedKey];
         [[NSUserDefaults standardUserDefaults]synchronize];
-        _msg.text=@"Master Key Activated";_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
+        _msg.text=@"> Access Granted: Master Root";_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,600*NSEC_PER_MSEC),dispatch_get_main_queue(),^{if(self.onAuth)self.onAuth();});return;
     }
     NSString*devID=[[UIDevice currentDevice].identifierForVendor.UUIDString stringByReplacingOccurrencesOfString:@"-" withString:@""];
-    [_sp startAnimating];_btn.enabled=NO;_msg.text=@"Verifying...";_msg.textColor=ZXGray;
+    [_sp startAnimating];_btn.enabled=NO;_msg.text=@"> Connecting to auth node...";_msg.textColor=ZXGray;
     NSString*url=[NSString stringWithFormat:@"%@/verify?key=%@&device=%@",kServerBase,
         [key stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet],devID];
     [[[NSURLSession sharedSession]dataTaskWithURL:[NSURL URLWithString:url] completionHandler:^(NSData*d,NSURLResponse*r,NSError*e){
         dispatch_async(dispatch_get_main_queue(),^{
             [self->_sp stopAnimating];self->_btn.enabled=YES;
-            if(!d||e){self->_msg.text=@"Network error";self->_msg.textColor=UIColor.systemRedColor;return;}
+            if(!d||e){self->_msg.text=@"> Server connection failed";self->_msg.textColor=UIColor.systemRedColor;return;}
             NSDictionary*j=[NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
             if([j[@"valid"]boolValue]){
                 [[NSUserDefaults standardUserDefaults]setObject:key forKey:kSavedKey];
                 [[NSUserDefaults standardUserDefaults]synchronize];
-                self->_msg.text=@"Activated!";self->_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
+                self->_msg.text=@"> Access Granted: Verified!";self->_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW,600*NSEC_PER_MSEC),dispatch_get_main_queue(),^{if(self.onAuth)self.onAuth();});
             } else {
-                self->_msg.text=j[@"reason"]?:@"Invalid key";self->_msg.textColor=UIColor.systemRedColor;
+                self->_msg.text=[NSString stringWithFormat:@"> Access Denied: %@", j[@"reason"]?:@"Invalid key"];self->_msg.textColor=UIColor.systemRedColor;
             }
         });
     }]resume];
@@ -860,48 +992,108 @@ static UIImage* ZXFixOrientation(UIImage* src) {
 }
 -(void)showSplash{
     UIView*splash=[[UIView alloc]initWithFrame:self.view.bounds];
-    splash.backgroundColor=ZXBg;splash.autoresizingMask=63;
+    splash.backgroundColor=[UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:1.0];
+    splash.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
+    
     CAGradientLayer*g=[CAGradientLayer layer];g.frame=splash.bounds;
-    g.colors=@[(id)[UIColor colorWithRed:.15 green:0 blue:.03 alpha:1].CGColor,(id)ZXBg.CGColor];
-    g.locations=@[@0,@.5];[splash.layer insertSublayer:g atIndex:0];
+    g.colors=@[(id)[UIColor colorWithRed:.22 green:.01 blue:.05 alpha:1].CGColor,(id)[UIColor colorWithRed:.03 green:.01 blue:.02 alpha:1].CGColor];
+    g.locations=@[@0,@.7];[splash.layer insertSublayer:g atIndex:0];
+    
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(4,4),NO,0);
-    CGContextSetFillColorWithColor(UIGraphicsGetCurrentContext(),ZXRed.CGColor);
+    CGContextSetFillColorWithColor(UIGraphicsGetCurrentContext(),[UIColor colorWithRed:1.0 green:0.15 blue:0.3 alpha:0.9].CGColor);
     CGContextFillEllipseInRect(UIGraphicsGetCurrentContext(),CGRectMake(0,0,4,4));
     UIImage*dot=UIGraphicsGetImageFromCurrentImageContext();UIGraphicsEndImageContext();
+    
     CAEmitterLayer*el=[CAEmitterLayer layer];
     el.emitterPosition=CGPointMake(UIScreen.mainScreen.bounds.size.width/2,-10);
     el.emitterSize=CGSizeMake(UIScreen.mainScreen.bounds.size.width,0);
     el.emitterShape=kCAEmitterLayerLine;
     CAEmitterCell*ec=[CAEmitterCell emitterCell];
-    ec.contents=(id)dot.CGImage;ec.birthRate=6;ec.lifetime=7;
-    ec.velocity=35;ec.velocityRange=15;ec.emissionRange=M_PI/8;
-    ec.scale=1.2;ec.scaleRange=.6;ec.alphaRange=.4;ec.alphaSpeed=-.06;
+    ec.contents=(id)dot.CGImage;ec.birthRate=8;ec.lifetime=8;
+    ec.velocity=35;ec.velocityRange=15;ec.emissionRange=M_PI/6;
+    ec.scale=1.2;ec.scaleRange=.6;ec.alphaRange=.4;ec.alphaSpeed=-.05;
     el.emitterCells=@[ec];[splash.layer addSublayer:el];
+    
+    CGPoint centerPt = CGPointMake(UIScreen.mainScreen.bounds.size.width/2, UIScreen.mainScreen.bounds.size.height/2 - 45);
+    ZXAddCyberRings(splash, centerPt, 95);
+    
     UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
     NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
     [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,3)];
     [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(3,9)];
     [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:36 weight:UIFontWeightHeavy] range:NSMakeRange(0,12)];
-    logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;[splash addSubview:logo];
+    [as addAttribute:NSKernAttributeName value:@3.0 range:NSMakeRange(0,12)];
+    logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
+    logo.layer.shadowColor=ZXRed.CGColor;logo.layer.shadowOffset=CGSizeZero;
+    logo.layer.shadowRadius=20;logo.layer.shadowOpacity=0.9;
+    [splash addSubview:logo];
+    
+    UIView*badge=[UIView new];badge.translatesAutoresizingMaskIntoConstraints=NO;
+    badge.backgroundColor=[UIColor colorWithRed:0.25 green:0.02 blue:0.06 alpha:0.8];
+    badge.layer.cornerRadius=10;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.6].CGColor;
+    badge.layer.borderWidth=0.8;[splash addSubview:badge];
+    UILabel*badgeLbl=[UILabel new];badgeLbl.translatesAutoresizingMaskIntoConstraints=NO;
+    badgeLbl.text=@"⚡ KERNEL VIP CORE";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
+    badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:1.0];[badge addSubview:badgeLbl];
+    
     UILabel*sub=[UILabel new];sub.translatesAutoresizingMaskIntoConstraints=NO;
-    sub.text=@"PREMIUM INJECTION SYSTEM";sub.font=[UIFont systemFontOfSize:10 weight:UIFontWeightMedium];
-    sub.textColor=[UIColor colorWithWhite:1 alpha:.3];sub.textAlignment=NSTextAlignmentCenter;[splash addSubview:sub];
-    UIActivityIndicatorView*sp=[[UIActivityIndicatorView alloc]initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
-    sp.translatesAutoresizingMaskIntoConstraints=NO;sp.color=ZXRed;[sp startAnimating];[splash addSubview:sp];
+    sub.text=@"> INITIALIZING BYPASS SYSTEM_";
+    sub.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
+    sub.textColor=[UIColor colorWithWhite:1 alpha:.6];sub.textAlignment=NSTextAlignmentCenter;[splash addSubview:sub];
+    
+    UIView*pTrack=[UIView new];pTrack.translatesAutoresizingMaskIntoConstraints=NO;
+    pTrack.backgroundColor=[UIColor colorWithWhite:1 alpha:0.08];
+    pTrack.layer.cornerRadius=3;pTrack.clipsToBounds=YES;
+    pTrack.layer.borderWidth=0.5;pTrack.layer.borderColor=[UIColor colorWithWhite:1 alpha:0.12].CGColor;
+    [splash addSubview:pTrack];
+    
+    UIView*pBar=[UIView new];pBar.translatesAutoresizingMaskIntoConstraints=NO;
+    pBar.backgroundColor=ZXRed;pBar.layer.cornerRadius=3;
+    pBar.layer.shadowColor=ZXRed.CGColor;pBar.layer.shadowOffset=CGSizeZero;pBar.layer.shadowRadius=8;pBar.layer.shadowOpacity=1.0;
+    [pTrack addSubview:pBar];
+    
+    NSLayoutConstraint*pWidth=[pBar.widthAnchor constraintEqualToConstant:10];
+    
     [NSLayoutConstraint activateConstraints:@[
         [logo.centerXAnchor constraintEqualToAnchor:splash.centerXAnchor],
-        [logo.centerYAnchor constraintEqualToAnchor:splash.centerYAnchor constant:-30],
+        [logo.centerYAnchor constraintEqualToAnchor:splash.centerYAnchor constant:-45],
+        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:12],
+        [badge.centerXAnchor constraintEqualToAnchor:splash.centerXAnchor],
+        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
+        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
+        [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
+        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
         [sub.centerXAnchor constraintEqualToAnchor:splash.centerXAnchor],
-        [sub.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:10],
-        [sp.centerXAnchor constraintEqualToAnchor:splash.centerXAnchor],
-        [sp.topAnchor constraintEqualToAnchor:sub.bottomAnchor constant:30],
+        [sub.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:16],
+        [pTrack.centerXAnchor constraintEqualToAnchor:splash.centerXAnchor],
+        [pTrack.topAnchor constraintEqualToAnchor:sub.bottomAnchor constant:20],
+        [pTrack.widthAnchor constraintEqualToConstant:160],
+        [pTrack.heightAnchor constraintEqualToConstant:5],
+        [pBar.leadingAnchor constraintEqualToAnchor:pTrack.leadingAnchor],
+        [pBar.topAnchor constraintEqualToAnchor:pTrack.topAnchor],
+        [pBar.bottomAnchor constraintEqualToAnchor:pTrack.bottomAnchor],
+        pWidth
     ]];
+    
     [self.view addSubview:splash];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,2000*NSEC_PER_MSEC),dispatch_get_main_queue(),^{
-        [UIView animateWithDuration:.5 animations:^{splash.alpha=0;} completion:^(BOOL f){
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        pWidth.constant = 80;
+        [UIView animateWithDuration:0.6 animations:^{ [splash layoutIfNeeded]; }];
+        sub.text = @"> BYPASSING SECURITY LAYER_";
+    });
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1100 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        pWidth.constant = 160;
+        [UIView animateWithDuration:0.7 animations:^{ [splash layoutIfNeeded]; }];
+        sub.text = @"> ALL SYSTEMS OPERATIONAL_";
+        sub.textColor = ZXGreen;
+    });
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2200*NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        [UIView animateWithDuration:.5 animations:^{ splash.alpha=0; } completion:^(BOOL f){
             [splash removeFromSuperview];
             NSString*saved=[[NSUserDefaults standardUserDefaults]stringForKey:kSavedKey];
-            if(saved.length)[self verifyAndProceed:saved];else[self showAuth];
+            if(saved.length)[self verifyAndProceed:saved]; else [self showAuth];
         }];
     });
 }
