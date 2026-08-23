@@ -417,23 +417,45 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     __weak ZXMainVC*ws=self;
     
     void (^handleResult)(NSURL*, NSURLResponse*, NSError*) = ^(NSURL*tmp, NSURLResponse*resp, NSError*err){
-        dispatch_async(dispatch_get_main_queue(),^{
-            __strong ZXMainVC*sv=ws;
-            if(!sv)return;
-            ZXSlotCell*c2=(ZXSlotCell*)[sv->_tv cellForRowAtIndexPath:cIP];
-            if(!tmp||err){c2.sw.on=NO;[c2 setStatus:@"Download failed" color:UIColor.systemRedColor];return;}
-            NSHTTPURLResponse*hr=(NSHTTPURLResponse*)resp;
-            if(hr.statusCode!=200){c2.sw.on=NO;[c2 setStatus:[NSString stringWithFormat:@"Server %ld",(long)hr.statusCode] color:UIColor.systemRedColor];return;}
-            NSString*fn=hr.allHeaderFields[@"X-File-Name"]?:hr.allHeaderFields[@"x-file-name"]?:slot.fileName?:@"file";
-            NSFileManager*fm=NSFileManager.defaultManager;
-            NSString*dest=[cDir stringByAppendingPathComponent:fn];
+        NSHTTPURLResponse*hr=(NSHTTPURLResponse*)resp;
+        if(!tmp || err || hr.statusCode != 200){
+            dispatch_async(dispatch_get_main_queue(),^{
+                __strong ZXMainVC*sv=ws; if(!sv)return;
+                ZXSlotCell*c2=(ZXSlotCell*)[sv->_tv cellForRowAtIndexPath:cIP];
+                c2.sw.on=NO;
+                if(hr && hr.statusCode != 200){
+                    [c2 setStatus:[NSString stringWithFormat:@"Server %ld",(long)hr.statusCode] color:UIColor.systemRedColor];
+                } else {
+                    [c2 setStatus:@"Download failed" color:UIColor.systemRedColor];
+                }
+            });
+            return;
+        }
+        
+        NSString*fn=hr.allHeaderFields[@"X-File-Name"]?:hr.allHeaderFields[@"x-file-name"]?:slot.fileName?:@"file";
+        NSFileManager*fm=NSFileManager.defaultManager;
+        [fm createDirectoryAtPath:cDir withIntermediateDirectories:YES attributes:nil error:nil];
+        NSString*dest=[cDir stringByAppendingPathComponent:fn];
+        
+        NSData*data=[NSData dataWithContentsOfURL:tmp];
+        NSError*writeErr=nil;
+        BOOL ok=NO;
+        if(data && data.length > 0){
+            ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
+        } else {
             if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
-            NSError*mv=nil;BOOL ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&mv];
+            ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
+        }
+        
+        dispatch_async(dispatch_get_main_queue(),^{
+            __strong ZXMainVC*sv=ws; if(!sv)return;
+            ZXSlotCell*c2=(ZXSlotCell*)[sv->_tv cellForRowAtIndexPath:cIP];
             if(ok){
                 [c2 setStatus:@"Injected" color:ZXGreen];
                 [sv showPopup:sName];
             } else {
-                c2.sw.on=NO;[c2 setStatus:[NSString stringWithFormat:@"Failed: %@",mv.localizedDescription ?: @"Write error"] color:UIColor.systemRedColor];
+                c2.sw.on=NO;
+                [c2 setStatus:[NSString stringWithFormat:@"Write failed: %@", writeErr.localizedDescription ?: @"Error"] color:UIColor.systemRedColor];
             }
         });
     };
@@ -461,20 +483,46 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     __weak ZXMainVC*ws=self;
     
     void (^handleResult)(NSURL*, NSURLResponse*, NSError*) = ^(NSURL*tmp, NSURLResponse*resp, NSError*err){
-        dispatch_async(dispatch_get_main_queue(),^{
-            __strong ZXMainVC*sv=ws;
-            if(!sv)return;
-            ZXPhotoCell*c2=(ZXPhotoCell*)[sv->_tv cellForRowAtIndexPath:cIP];
-            if(!tmp||err){c2.sw.on=NO;[c2 setStatus:@"Download failed" color:UIColor.systemRedColor];return;}
-            NSHTTPURLResponse*hr=(NSHTTPURLResponse*)resp;
-            if(hr.statusCode!=200){c2.sw.on=NO;[c2 setStatus:[NSString stringWithFormat:@"Server %ld",(long)hr.statusCode] color:UIColor.systemRedColor];return;}
-            NSString*fn=hr.allHeaderFields[@"X-File-Name"]?:hr.allHeaderFields[@"x-file-name"]?:slot.fileName?:@"file";
-            NSFileManager*fm=NSFileManager.defaultManager;
-            NSString*dest=[cDir stringByAppendingPathComponent:fn];
+        NSHTTPURLResponse*hr=(NSHTTPURLResponse*)resp;
+        if(!tmp || err || hr.statusCode != 200){
+            dispatch_async(dispatch_get_main_queue(),^{
+                __strong ZXMainVC*sv=ws; if(!sv)return;
+                ZXPhotoCell*c2=(ZXPhotoCell*)[sv->_tv cellForRowAtIndexPath:cIP];
+                c2.sw.on=NO;
+                if(hr && hr.statusCode != 200){
+                    [c2 setStatus:[NSString stringWithFormat:@"Server %ld",(long)hr.statusCode] color:UIColor.systemRedColor];
+                } else {
+                    [c2 setStatus:@"Download failed" color:UIColor.systemRedColor];
+                }
+            });
+            return;
+        }
+        
+        NSString*fn=hr.allHeaderFields[@"X-File-Name"]?:hr.allHeaderFields[@"x-file-name"]?:slot.fileName?:@"file";
+        NSFileManager*fm=NSFileManager.defaultManager;
+        [fm createDirectoryAtPath:cDir withIntermediateDirectories:YES attributes:nil error:nil];
+        NSString*dest=[cDir stringByAppendingPathComponent:fn];
+        
+        NSData*data=[NSData dataWithContentsOfURL:tmp];
+        NSError*writeErr=nil;
+        BOOL ok=NO;
+        if(data && data.length > 0){
+            ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
+        } else {
             if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
-            NSError*mv=nil;BOOL ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&mv];
-            if(ok){[c2 setStatus:@"Injected" color:ZXGreen];[sv showPopup:sName];}
-            else{c2.sw.on=NO;[c2 setStatus:@"Failed" color:UIColor.systemRedColor];}
+            ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
+        }
+        
+        dispatch_async(dispatch_get_main_queue(),^{
+            __strong ZXMainVC*sv=ws; if(!sv)return;
+            ZXPhotoCell*c2=(ZXPhotoCell*)[sv->_tv cellForRowAtIndexPath:cIP];
+            if(ok){
+                [c2 setStatus:@"Injected" color:ZXGreen];
+                [sv showPopup:sName];
+            } else {
+                c2.sw.on=NO;
+                [c2 setStatus:[NSString stringWithFormat:@"Write failed: %@", writeErr.localizedDescription ?: @"Error"] color:UIColor.systemRedColor];
+            }
         });
     };
     
