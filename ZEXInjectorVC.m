@@ -412,27 +412,42 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     NSString*autoUrl=[NSString stringWithFormat:@"%@/slot-file/%ld/%ld",kServerBase,(long)opt,(long)slot.slotId];
     NSMutableURLRequest*req=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:autoUrl]];
     [req setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
+    req.timeoutInterval = 20.0;
     NSString*cDir=dir;NSIndexPath*cIP=ip;NSString*sName=slot.name;
     __weak ZXMainVC*ws=self;
-    [[[NSURLSession sharedSession]downloadTaskWithRequest:req completionHandler:^(NSURL*tmp,NSURLResponse*resp,NSError*err){
+    
+    void (^handleResult)(NSURL*, NSURLResponse*, NSError*) = ^(NSURL*tmp, NSURLResponse*resp, NSError*err){
         dispatch_async(dispatch_get_main_queue(),^{
             __strong ZXMainVC*sv=ws;
+            if(!sv)return;
             ZXSlotCell*c2=(ZXSlotCell*)[sv->_tv cellForRowAtIndexPath:cIP];
             if(!tmp||err){c2.sw.on=NO;[c2 setStatus:@"Download failed" color:UIColor.systemRedColor];return;}
             NSHTTPURLResponse*hr=(NSHTTPURLResponse*)resp;
             if(hr.statusCode!=200){c2.sw.on=NO;[c2 setStatus:[NSString stringWithFormat:@"Server %ld",(long)hr.statusCode] color:UIColor.systemRedColor];return;}
-            NSString*fn=hr.allHeaderFields[@"X-File-Name"]?:@"file";
+            NSString*fn=hr.allHeaderFields[@"X-File-Name"]?:hr.allHeaderFields[@"x-file-name"]?:slot.fileName?:@"file";
             NSFileManager*fm=NSFileManager.defaultManager;
             NSString*dest=[cDir stringByAppendingPathComponent:fn];
             if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
             NSError*mv=nil;BOOL ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&mv];
             if(ok){
                 [c2 setStatus:@"Injected" color:ZXGreen];
-                [ws showPopup:sName];
+                [sv showPopup:sName];
             } else {
-                c2.sw.on=NO;[c2 setStatus:[NSString stringWithFormat:@"Failed: %@",mv.localizedDescription] color:UIColor.systemRedColor];
+                c2.sw.on=NO;[c2 setStatus:[NSString stringWithFormat:@"Failed: %@",mv.localizedDescription ?: @"Write error"] color:UIColor.systemRedColor];
             }
         });
+    };
+    
+    [[[NSURLSession sharedSession]downloadTaskWithRequest:req completionHandler:^(NSURL*tmp,NSURLResponse*resp,NSError*err){
+        NSHTTPURLResponse*hr=(NSHTTPURLResponse*)resp;
+        if((!tmp || err || (hr && hr.statusCode != 200)) && slot.fileUrl.length > 0){
+            NSMutableURLRequest*req2=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:slot.fileUrl]];
+            [req2 setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
+            req2.timeoutInterval = 20.0;
+            [[[NSURLSession sharedSession]downloadTaskWithRequest:req2 completionHandler:handleResult] resume];
+            return;
+        }
+        handleResult(tmp, resp, err);
     }]resume];
 }
 -(void)doInjectPhoto:(ZXSlot*)slot dir:(NSString*)dir optNum:(NSInteger)opt ip:(NSIndexPath*)ip{
@@ -441,23 +456,38 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     NSString*autoUrl=[NSString stringWithFormat:@"%@/slot-file/%ld/%ld",kServerBase,(long)opt,(long)slot.slotId];
     NSMutableURLRequest*req=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:autoUrl]];
     [req setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
+    req.timeoutInterval = 20.0;
     NSString*cDir=dir;NSIndexPath*cIP=ip;NSString*sName=slot.name;
     __weak ZXMainVC*ws=self;
-    [[[NSURLSession sharedSession]downloadTaskWithRequest:req completionHandler:^(NSURL*tmp,NSURLResponse*resp,NSError*err){
+    
+    void (^handleResult)(NSURL*, NSURLResponse*, NSError*) = ^(NSURL*tmp, NSURLResponse*resp, NSError*err){
         dispatch_async(dispatch_get_main_queue(),^{
             __strong ZXMainVC*sv=ws;
+            if(!sv)return;
             ZXPhotoCell*c2=(ZXPhotoCell*)[sv->_tv cellForRowAtIndexPath:cIP];
             if(!tmp||err){c2.sw.on=NO;[c2 setStatus:@"Download failed" color:UIColor.systemRedColor];return;}
             NSHTTPURLResponse*hr=(NSHTTPURLResponse*)resp;
             if(hr.statusCode!=200){c2.sw.on=NO;[c2 setStatus:[NSString stringWithFormat:@"Server %ld",(long)hr.statusCode] color:UIColor.systemRedColor];return;}
-            NSString*fn=hr.allHeaderFields[@"X-File-Name"]?:@"file";
+            NSString*fn=hr.allHeaderFields[@"X-File-Name"]?:hr.allHeaderFields[@"x-file-name"]?:slot.fileName?:@"file";
             NSFileManager*fm=NSFileManager.defaultManager;
             NSString*dest=[cDir stringByAppendingPathComponent:fn];
             if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
             NSError*mv=nil;BOOL ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&mv];
-            if(ok){[c2 setStatus:@"Injected" color:ZXGreen];[ws showPopup:sName];}
+            if(ok){[c2 setStatus:@"Injected" color:ZXGreen];[sv showPopup:sName];}
             else{c2.sw.on=NO;[c2 setStatus:@"Failed" color:UIColor.systemRedColor];}
         });
+    };
+    
+    [[[NSURLSession sharedSession]downloadTaskWithRequest:req completionHandler:^(NSURL*tmp,NSURLResponse*resp,NSError*err){
+        NSHTTPURLResponse*hr=(NSHTTPURLResponse*)resp;
+        if((!tmp || err || (hr && hr.statusCode != 200)) && slot.fileUrl.length > 0){
+            NSMutableURLRequest*req2=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:slot.fileUrl]];
+            [req2 setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
+            req2.timeoutInterval = 20.0;
+            [[[NSURLSession sharedSession]downloadTaskWithRequest:req2 completionHandler:handleResult] resume];
+            return;
+        }
+        handleResult(tmp, resp, err);
     }]resume];
 }
 -(void)showPopup:(NSString*)name{
