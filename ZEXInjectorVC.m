@@ -987,31 +987,108 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
 -(UIViewController*)childViewControllerForStatusBarStyle{return self.childViewControllers.lastObject;}
 -(void)viewDidLoad{
     [super viewDidLoad];
-    self.view.frame=UIScreen.mainScreen.bounds;self.view.backgroundColor=ZXBg;
+    self.view.frame=UIScreen.mainScreen.bounds;
+    self.view.backgroundColor=[UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:1.0];
+    [self showLoadingScreen];
+}
+-(void)showLoadingScreen{
+    UIView*loader=[[UIView alloc]initWithFrame:self.view.bounds];
+    loader.backgroundColor=[UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:1.0];
+    loader.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     
-    NSString*saved=[[NSUserDefaults standardUserDefaults]stringForKey:kSavedKey];
-    if(saved.length){
-        [self showMain];
-        if(![saved isEqualToString:@"ZEX-MASTER-9999-ROOT"]){
-            NSString*dev=[[UIDevice currentDevice].identifierForVendor.UUIDString stringByReplacingOccurrencesOfString:@"-" withString:@""];
-            NSString*url=[NSString stringWithFormat:@"%@/verify?key=%@&device=%@",kServerBase,
-                [saved stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet],dev];
-            [[[NSURLSession sharedSession]dataTaskWithURL:[NSURL URLWithString:url] completionHandler:^(NSData*d,NSURLResponse*r,NSError*e){
-                if(d && !e){
-                    NSDictionary*j=[NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
-                    if(![j[@"valid"]boolValue]){
-                        dispatch_async(dispatch_get_main_queue(),^{
-                            [[NSUserDefaults standardUserDefaults]removeObjectForKey:kSavedKey];
-                            [[NSUserDefaults standardUserDefaults]synchronize];
-                            [self showAuth];
-                        });
-                    }
-                }
-            }]resume];
+    CAGradientLayer*g=[CAGradientLayer layer];g.frame=loader.bounds;
+    g.colors=@[(id)[UIColor colorWithRed:.20 green:.01 blue:.04 alpha:1].CGColor,(id)[UIColor colorWithRed:.03 green:.01 blue:.02 alpha:1].CGColor];
+    g.locations=@[@0,@.7];[loader.layer insertSublayer:g atIndex:0];
+    
+    CGPoint centerPt = CGPointMake(UIScreen.mainScreen.bounds.size.width/2, UIScreen.mainScreen.bounds.size.height/2 - 50);
+    ZXAddCyberRings(loader, centerPt, 95);
+    
+    UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
+    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
+    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,3)];
+    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(3,9)];
+    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:34 weight:UIFontWeightHeavy] range:NSMakeRange(0,12)];
+    [as addAttribute:NSKernAttributeName value:@2.5 range:NSMakeRange(0,12)];
+    logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
+    logo.layer.shadowColor=ZXRed.CGColor;logo.layer.shadowOffset=CGSizeZero;
+    logo.layer.shadowRadius=18;logo.layer.shadowOpacity=0.9;
+    [loader addSubview:logo];
+    
+    UIView*badge=[UIView new];badge.translatesAutoresizingMaskIntoConstraints=NO;
+    badge.backgroundColor=[UIColor colorWithRed:0.25 green:0.02 blue:0.06 alpha:0.8];
+    badge.layer.cornerRadius=10;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.6].CGColor;
+    badge.layer.borderWidth=0.8;[loader addSubview:badge];
+    UILabel*badgeLbl=[UILabel new];badgeLbl.translatesAutoresizingMaskIntoConstraints=NO;
+    badgeLbl.text=@"⚡ KERNEL BYPASS ENGINE";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
+    badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:1.0];[badge addSubview:badgeLbl];
+    
+    UILabel*sub=[UILabel new];sub.translatesAutoresizingMaskIntoConstraints=NO;
+    sub.text=@"> INITIALIZING ENGINE...";
+    sub.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
+    sub.textColor=[UIColor colorWithWhite:1 alpha:.7];sub.textAlignment=NSTextAlignmentCenter;[loader addSubview:sub];
+    
+    UIView*pTrack=[UIView new];pTrack.translatesAutoresizingMaskIntoConstraints=NO;
+    pTrack.backgroundColor=[UIColor colorWithWhite:1 alpha:0.08];
+    pTrack.layer.cornerRadius=3;pTrack.clipsToBounds=YES;
+    pTrack.layer.borderWidth=0.5;pTrack.layer.borderColor=[UIColor colorWithWhite:1 alpha:0.12].CGColor;
+    [loader addSubview:pTrack];
+    
+    UIView*pBar=[UIView new];pBar.translatesAutoresizingMaskIntoConstraints=NO;
+    pBar.backgroundColor=ZXRed;pBar.layer.cornerRadius=3;
+    pBar.layer.shadowColor=ZXRed.CGColor;pBar.layer.shadowOffset=CGSizeZero;pBar.layer.shadowRadius=8;pBar.layer.shadowOpacity=1.0;
+    [pTrack addSubview:pBar];
+    
+    NSLayoutConstraint*pWidth=[pBar.widthAnchor constraintEqualToConstant:15];
+    
+    [NSLayoutConstraint activateConstraints:@[
+        [logo.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
+        [logo.centerYAnchor constraintEqualToAnchor:loader.centerYAnchor constant:-50],
+        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:12],
+        [badge.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
+        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
+        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
+        [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
+        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
+        [sub.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
+        [sub.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:16],
+        [pTrack.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
+        [pTrack.topAnchor constraintEqualToAnchor:sub.bottomAnchor constant:18],
+        [pTrack.widthAnchor constraintEqualToConstant:170],
+        [pTrack.heightAnchor constraintEqualToConstant:5],
+        [pBar.leadingAnchor constraintEqualToAnchor:pTrack.leadingAnchor],
+        [pBar.topAnchor constraintEqualToAnchor:pTrack.topAnchor],
+        [pBar.bottomAnchor constraintEqualToAnchor:pTrack.bottomAnchor],
+        pWidth
+    ]];
+    
+    [self.view addSubview:loader];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 200 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        pWidth.constant = 90;
+        [UIView animateWithDuration:0.4 animations:^{ [loader layoutIfNeeded]; }];
+        sub.text = @"> CONNECTING TO SERVER...";
+    });
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 600 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        pWidth.constant = 170;
+        [UIView animateWithDuration:0.4 animations:^{ [loader layoutIfNeeded]; }];
+        sub.text = @"> ALL SYSTEMS READY_";
+        sub.textColor = ZXGreen;
+    });
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1100 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        NSString*saved=[[NSUserDefaults standardUserDefaults]stringForKey:kSavedKey];
+        if(saved.length){
+            [self showMain];
+        } else {
+            [self showAuth];
         }
-    } else {
-        [self showAuth];
-    }
+        [UIView animateWithDuration:0.3 animations:^{
+            loader.alpha = 0;
+        } completion:^(BOOL f){
+            [loader removeFromSuperview];
+        }];
+    });
 }
 -(void)showAuth{
     for(UIViewController*c in self.childViewControllers){[c willMoveToParentViewController:nil];[c.view removeFromSuperview];[c removeFromParentViewController];}
@@ -1020,7 +1097,7 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     a.onAuth=^{[ws showMain];};
     [self addChildViewController:a];a.view.frame=self.view.bounds;
     a.view.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
-    [self.view addSubview:a.view];[a didMoveToParentViewController:self];
+    [self.view insertSubview:a.view atIndex:0];[a didMoveToParentViewController:self];
     [self setNeedsStatusBarAppearanceUpdate];
 }
 -(void)showMain{
@@ -1028,7 +1105,7 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     ZXMainVC*m=[ZXMainVC new];
     [self addChildViewController:m];m.view.frame=self.view.bounds;
     m.view.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
-    [self.view addSubview:m.view];[m didMoveToParentViewController:self];
+    [self.view insertSubview:m.view atIndex:0];[m didMoveToParentViewController:self];
     [self setNeedsStatusBarAppearanceUpdate];
 }
 @end

@@ -7,14 +7,15 @@
 
 - (BOOL)application:(UIApplication *)application
     didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    MCMFilzaStart();
-    UIColor *bg = [UIColor colorWithRed:.04 green:.05 blue:.10 alpha:1];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+        MCMFilzaStart();
+    });
+    UIColor *bg = [UIColor colorWithRed:.04 green:.01 blue:.02 alpha:1];
     self.window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
     self.window.backgroundColor = bg;
     ZEXInjectorVC *vc = [[ZEXInjectorVC alloc] init];
     self.window.rootViewController = vc;
     [self.window makeKeyAndVisible];
-    // Force window background after display
     self.window.backgroundColor = bg;
     return YES;
 }
