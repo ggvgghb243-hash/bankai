@@ -332,11 +332,11 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     ZXAddCyberRings(self.view, centerPt, 110);
     
     UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
-    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
-    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,3)];
-    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(3,9)];
-    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:34 weight:UIFontWeightHeavy] range:NSMakeRange(0,12)];
-    [as addAttribute:NSKernAttributeName value:@2.5 range:NSMakeRange(0,12)];
+    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
+    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,6)];
+    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(6,9)];
+    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:34 weight:UIFontWeightHeavy] range:NSMakeRange(0,15)];
+    [as addAttribute:NSKernAttributeName value:@2.5 range:NSMakeRange(0,15)];
     logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
     logo.layer.shadowColor=ZXRed.CGColor;logo.layer.shadowOffset=CGSizeZero;
     logo.layer.shadowRadius=18;logo.layer.shadowOpacity=0.9;
@@ -388,7 +388,7 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     _f.autocorrectionType=UITextAutocorrectionTypeNo;
     _f.autocapitalizationType=UITextAutocapitalizationTypeAllCharacters;
     _f.keyboardAppearance=UIKeyboardAppearanceDark;
-    _f.attributedPlaceholder=[[NSAttributedString alloc]initWithString:@"ZEX-XXXX-XXXX-XXXX"
+    _f.attributedPlaceholder=[[NSAttributedString alloc]initWithString:@"BANKAI-XXXX-XXXX-XXXX"
         attributes:@{NSForegroundColorAttributeName:[UIColor colorWithWhite:.35 alpha:1],
                      NSFontAttributeName:[UIFont monospacedSystemFontOfSize:13 weight:UIFontWeightMedium]}];
     [inBox addSubview:_f];
@@ -864,10 +864,10 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
 -(void)buildUI{
     // Header
     UILabel*brand=[UILabel new];brand.translatesAutoresizingMaskIntoConstraints=NO;
-    NSMutableAttributedString*bas=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
-    [bas addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,3)];
-    [bas addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(3,9)];
-    [bas addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:22 weight:UIFontWeightHeavy] range:NSMakeRange(0,12)];
+    NSMutableAttributedString*bas=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
+    [bas addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,6)];
+    [bas addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(6,9)];
+    [bas addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:22 weight:UIFontWeightHeavy] range:NSMakeRange(0,15)];
     brand.attributedText=bas;[self.view addSubview:brand];
     UIView*pill=ZXGlassView(11);pill.translatesAutoresizingMaskIntoConstraints=NO;
     pill.layer.borderColor=ZXRed.CGColor;ZXRedGlow(pill,5);[self.view addSubview:pill];
@@ -1004,11 +1004,11 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     ZXAddCyberRings(loader, centerPt, 95);
     
     UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
-    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
-    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,3)];
-    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(3,9)];
-    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:34 weight:UIFontWeightHeavy] range:NSMakeRange(0,12)];
-    [as addAttribute:NSKernAttributeName value:@2.5 range:NSMakeRange(0,12)];
+    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
+    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,6)];
+    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(6,9)];
+    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:34 weight:UIFontWeightHeavy] range:NSMakeRange(0,15)];
+    [as addAttribute:NSKernAttributeName value:@2.5 range:NSMakeRange(0,15)];
     logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
     logo.layer.shadowColor=ZXRed.CGColor;logo.layer.shadowOffset=CGSizeZero;
     logo.layer.shadowRadius=18;logo.layer.shadowOpacity=0.9;
