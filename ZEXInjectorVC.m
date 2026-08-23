@@ -988,9 +988,29 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
 -(void)viewDidLoad{
     [super viewDidLoad];
     self.view.frame=UIScreen.mainScreen.bounds;self.view.backgroundColor=ZXBg;
-    [self showSplash];
+    
+    NSString*saved=[[NSUserDefaults standardUserDefaults]stringForKey:kSavedKey];
+    if(saved.length){
+        ZXMainVC*m=[ZXMainVC new];
+        [self addChildViewController:m];
+        m.view.frame=self.view.bounds;
+        m.view.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
+        [self.view addSubview:m.view];
+        [m didMoveToParentViewController:self];
+        [self showFastSplashWithKey:saved];
+    } else {
+        ZXAuthVC*a=[ZXAuthVC new];
+        __weak typeof(self) ws=self;
+        a.onAuth=^{[ws showMain];};
+        [self addChildViewController:a];
+        a.view.frame=self.view.bounds;
+        a.view.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
+        [self.view addSubview:a.view];
+        [a didMoveToParentViewController:self];
+        [self showFastSplashWithKey:nil];
+    }
 }
--(void)showSplash{
+-(void)showFastSplashWithKey:(NSString*)key{
     UIView*splash=[[UIView alloc]initWithFrame:self.view.bounds];
     splash.backgroundColor=[UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:1.0];
     splash.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
@@ -998,21 +1018,6 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     CAGradientLayer*g=[CAGradientLayer layer];g.frame=splash.bounds;
     g.colors=@[(id)[UIColor colorWithRed:.22 green:.01 blue:.05 alpha:1].CGColor,(id)[UIColor colorWithRed:.03 green:.01 blue:.02 alpha:1].CGColor];
     g.locations=@[@0,@.7];[splash.layer insertSublayer:g atIndex:0];
-    
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(4,4),NO,0);
-    CGContextSetFillColorWithColor(UIGraphicsGetCurrentContext(),[UIColor colorWithRed:1.0 green:0.15 blue:0.3 alpha:0.9].CGColor);
-    CGContextFillEllipseInRect(UIGraphicsGetCurrentContext(),CGRectMake(0,0,4,4));
-    UIImage*dot=UIGraphicsGetImageFromCurrentImageContext();UIGraphicsEndImageContext();
-    
-    CAEmitterLayer*el=[CAEmitterLayer layer];
-    el.emitterPosition=CGPointMake(UIScreen.mainScreen.bounds.size.width/2,-10);
-    el.emitterSize=CGSizeMake(UIScreen.mainScreen.bounds.size.width,0);
-    el.emitterShape=kCAEmitterLayerLine;
-    CAEmitterCell*ec=[CAEmitterCell emitterCell];
-    ec.contents=(id)dot.CGImage;ec.birthRate=8;ec.lifetime=8;
-    ec.velocity=35;ec.velocityRange=15;ec.emissionRange=M_PI/6;
-    ec.scale=1.2;ec.scaleRange=.6;ec.alphaRange=.4;ec.alphaSpeed=-.05;
-    el.emitterCells=@[ec];[splash.layer addSublayer:el];
     
     CGPoint centerPt = CGPointMake(UIScreen.mainScreen.bounds.size.width/2, UIScreen.mainScreen.bounds.size.height/2 - 45);
     ZXAddCyberRings(splash, centerPt, 95);
@@ -1037,22 +1042,9 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:1.0];[badge addSubview:badgeLbl];
     
     UILabel*sub=[UILabel new];sub.translatesAutoresizingMaskIntoConstraints=NO;
-    sub.text=@"> INITIALIZING BYPASS SYSTEM_";
+    sub.text=@"> ALL SYSTEMS OPERATIONAL_";
     sub.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
-    sub.textColor=[UIColor colorWithWhite:1 alpha:.6];sub.textAlignment=NSTextAlignmentCenter;[splash addSubview:sub];
-    
-    UIView*pTrack=[UIView new];pTrack.translatesAutoresizingMaskIntoConstraints=NO;
-    pTrack.backgroundColor=[UIColor colorWithWhite:1 alpha:0.08];
-    pTrack.layer.cornerRadius=3;pTrack.clipsToBounds=YES;
-    pTrack.layer.borderWidth=0.5;pTrack.layer.borderColor=[UIColor colorWithWhite:1 alpha:0.12].CGColor;
-    [splash addSubview:pTrack];
-    
-    UIView*pBar=[UIView new];pBar.translatesAutoresizingMaskIntoConstraints=NO;
-    pBar.backgroundColor=ZXRed;pBar.layer.cornerRadius=3;
-    pBar.layer.shadowColor=ZXRed.CGColor;pBar.layer.shadowOffset=CGSizeZero;pBar.layer.shadowRadius=8;pBar.layer.shadowOpacity=1.0;
-    [pTrack addSubview:pBar];
-    
-    NSLayoutConstraint*pWidth=[pBar.widthAnchor constraintEqualToConstant:10];
+    sub.textColor=ZXGreen;sub.textAlignment=NSTextAlignmentCenter;[splash addSubview:sub];
     
     [NSLayoutConstraint activateConstraints:@[
         [logo.centerXAnchor constraintEqualToAnchor:splash.centerXAnchor],
@@ -1065,60 +1057,42 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
         [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
         [sub.centerXAnchor constraintEqualToAnchor:splash.centerXAnchor],
         [sub.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:16],
-        [pTrack.centerXAnchor constraintEqualToAnchor:splash.centerXAnchor],
-        [pTrack.topAnchor constraintEqualToAnchor:sub.bottomAnchor constant:20],
-        [pTrack.widthAnchor constraintEqualToConstant:160],
-        [pTrack.heightAnchor constraintEqualToConstant:5],
-        [pBar.leadingAnchor constraintEqualToAnchor:pTrack.leadingAnchor],
-        [pBar.topAnchor constraintEqualToAnchor:pTrack.topAnchor],
-        [pBar.bottomAnchor constraintEqualToAnchor:pTrack.bottomAnchor],
-        pWidth
     ]];
     
     [self.view addSubview:splash];
     
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        pWidth.constant = 80;
-        [UIView animateWithDuration:0.6 animations:^{ [splash layoutIfNeeded]; }];
-        sub.text = @"> BYPASSING SECURITY LAYER_";
-    });
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1100 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        pWidth.constant = 160;
-        [UIView animateWithDuration:0.7 animations:^{ [splash layoutIfNeeded]; }];
-        sub.text = @"> ALL SYSTEMS OPERATIONAL_";
-        sub.textColor = ZXGreen;
-    });
+    if(key.length && ![key isEqualToString:@"ZEX-MASTER-9999-ROOT"]){
+        NSString*dev=[[UIDevice currentDevice].identifierForVendor.UUIDString stringByReplacingOccurrencesOfString:@"-" withString:@""];
+        NSString*url=[NSString stringWithFormat:@"%@/verify?key=%@&device=%@",kServerBase,
+            [key stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet],dev];
+        [[[NSURLSession sharedSession]dataTaskWithURL:[NSURL URLWithString:url] completionHandler:^(NSData*d,NSURLResponse*r,NSError*e){
+            if(d && !e){
+                NSDictionary*j=[NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
+                if(![j[@"valid"]boolValue]){
+                    dispatch_async(dispatch_get_main_queue(),^{
+                        [[NSUserDefaults standardUserDefaults]removeObjectForKey:kSavedKey];
+                        [[NSUserDefaults standardUserDefaults]synchronize];
+                        [self showAuth];
+                    });
+                }
+            }
+        }]resume];
+    }
     
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2200*NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        [UIView animateWithDuration:.5 animations:^{ splash.alpha=0; } completion:^(BOOL f){
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 500 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        [UIView animateWithDuration:0.35 animations:^{
+            splash.alpha = 0;
+        } completion:^(BOOL f){
             [splash removeFromSuperview];
-            NSString*saved=[[NSUserDefaults standardUserDefaults]stringForKey:kSavedKey];
-            if(saved.length)[self verifyAndProceed:saved]; else [self showAuth];
         }];
     });
 }
--(void)verifyAndProceed:(NSString*)key{
-    if([key isEqualToString:@"ZEX-MASTER-9999-ROOT"]){[self showMain];return;}
-    NSString*dev=[[UIDevice currentDevice].identifierForVendor.UUIDString stringByReplacingOccurrencesOfString:@"-" withString:@""];
-    NSString*url=[NSString stringWithFormat:@"%@/verify?key=%@&device=%@",kServerBase,
-        [key stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet],dev];
-    [[[NSURLSession sharedSession]dataTaskWithURL:[NSURL URLWithString:url] completionHandler:^(NSData*d,NSURLResponse*r,NSError*e){
-        dispatch_async(dispatch_get_main_queue(),^{
-            if(!d||e){[self showMain];return;}
-            NSDictionary*j=[NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
-            if([j[@"valid"]boolValue]){[self showMain];}
-            else{
-                [[NSUserDefaults standardUserDefaults]removeObjectForKey:kSavedKey];
-                [[NSUserDefaults standardUserDefaults]synchronize];
-                [self showAuth];
-            }
-        });
-    }]resume];
-}
 -(void)showAuth{
     for(UIViewController*c in self.childViewControllers){[c willMoveToParentViewController:nil];[c.view removeFromSuperview];[c removeFromParentViewController];}
-    ZXAuthVC*a=[ZXAuthVC new];a.onAuth=^{[self showMain];};
-    [self addChildViewController:a];a.view.frame=UIScreen.mainScreen.bounds;
+    ZXAuthVC*a=[ZXAuthVC new];
+    __weak typeof(self) ws=self;
+    a.onAuth=^{[ws showMain];};
+    [self addChildViewController:a];a.view.frame=self.view.bounds;
     a.view.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:a.view];[a didMoveToParentViewController:self];
     [self setNeedsStatusBarAppearanceUpdate];
@@ -1126,7 +1100,7 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
 -(void)showMain{
     for(UIViewController*c in self.childViewControllers){[c willMoveToParentViewController:nil];[c.view removeFromSuperview];[c removeFromParentViewController];}
     ZXMainVC*m=[ZXMainVC new];
-    [self addChildViewController:m];m.view.frame=UIScreen.mainScreen.bounds;
+    [self addChildViewController:m];m.view.frame=self.view.bounds;
     m.view.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:m.view];[m didMoveToParentViewController:self];
     [self setNeedsStatusBarAppearanceUpdate];
