@@ -1,0 +1,113 @@
+﻿name: Build Bankai ZEX INJECTOR IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    name: Build IPA
+    runs-on: macos-14
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Build Dependencies
+        run: |
+          brew install ldid make dpkg
+
+      - name: Setup Theos
+        run: |
+          export THEOS="$HOME/theos"
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          git clone --recursive https://github.com/theos/theos.git "$HOME/theos"
+
+      - name: Setup iOS SDKs
+        run: |
+          export THEOS="$HOME/theos"
+          mkdir -p "$THEOS/sdks"
+          
+          # Download community header-complete SDKs
+          echo "Downloading Theos SDKs..."
+          curl -fsSL https://github.com/theos/sdks/archive/master.tar.gz -o master.tar.gz
+          TMP_DIR=$(mktemp -d)
+          tar -zxf master.tar.gz -C "$TMP_DIR"
+          cp -r "$TMP_DIR"/sdks-master/*.sdk "$THEOS/sdks/" 2>/dev/null || true
+          rm -rf master.tar.gz "$TMP_DIR"
+          
+          # Link Xcode local SDK
+          XCODE_SDK=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null || true)
+          if [ -d "$XCODE_SDK" ]; then
+            echo "Linking Xcode SDK: $XCODE_SDK"
+            ln -sf "$XCODE_SDK" "$THEOS/sdks/$(basename "$XCODE_SDK")"
+            ln -sf "$XCODE_SDK" "$THEOS/sdks/iPhoneOS.sdk"
+            ln -sf "$XCODE_SDK" "$THEOS/sdks/iPhoneOS17.5.sdk"
+          fi
+          
+          echo "Available SDKs in Theos:"
+          ls -la "$THEOS/sdks"
+
+      - name: Compile Project
+        run: |
+          export THEOS="$HOME/theos"
+          export PATH="$THEOS/bin:$(brew --prefix make)/libexec/gnubin:$PATH"
+          
+          echo "Current directory: $(pwd)"
+          make clean
+          make FINALPACKAGE=1
+          
+          echo "=== Build output directories ==="
+          find .theos -type d -name "*.app" || true
+
+      - name: Package IPA
+        run: |
+          APP=$(find .theos -name "ZEXInjector.app" -type d | head -n 1)
+          if [ -z "$APP" ]; then
+            APP=$(find .theos -name "*.app" -type d | head -n 1)
+          fi
+          if [ -z "$APP" ]; then
+            APP=$(find . -name "ZEXInjector.app" -type d | head -n 1)
+          fi
+          
+          if [ -z "$APP" ]; then
+            echo "ERROR: .app bundle not found after compilation!"
+            exit 1
+          fi
+          
+          echo "Found compiled app at: $APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/ZEXInjector.app
+          
+          # Copy resources if present
+          if [ -d "Resources" ]; then
+            echo "Copying Resources into app bundle..."
+            cp -R Resources/* Payload/ZEXInjector.app/ 2>/dev/null || true
+          fi
+          
+          # Copy Info.plist if present
+          if [ -f "Info.plist" ]; then
+            cp Info.plist Payload/ZEXInjector.app/Info.plist
+          fi
+          
+          # Sign binary with entitlements using ldid
+          if [ -f "entitlements.plist" ] && [ -f "Payload/ZEXInjector.app/ZEXInjector" ]; then
+            echo "Signing with entitlements.plist via ldid..."
+            ldid -Sentitlements.plist Payload/ZEXInjector.app/ZEXInjector || true
+          fi
+          
+          # Zip into IPA
+          zip -qry bankai-ZEXInjector.ipa Payload
+          echo "=== IPA Created Successfully ==="
+          ls -lh bankai-ZEXInjector.ipa
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bankai-ZEXInjector-IPA
+          path: bankai-ZEXInjector.ipa
+          retention-days: 30
