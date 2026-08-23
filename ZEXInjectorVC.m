@@ -183,6 +183,16 @@ static void ZXRedGlow(UIView*v,CGFloat r){
 -(void)swCh:(UISwitch*)s{if(self.onToggle)self.onToggle(s.isOn);}
 @end
 
+static UIImage* ZXFixOrientation(UIImage* src) {
+    if (!src) return nil;
+    if (src.imageOrientation == UIImageOrientationUp) return src;
+    UIGraphicsBeginImageContextWithOptions(src.size, NO, src.scale);
+    [src drawInRect:CGRectMake(0, 0, src.size.width, src.size.height)];
+    UIImage *normalized = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return normalized ?: src;
+}
+
 // ── ZXPhotoCell ───────────────────────────────────────────────────
 @interface ZXPhotoCell : UITableViewCell
 -(void)configure:(ZXSlot*)s idx:(NSInteger)idx;
@@ -210,8 +220,8 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     self.sw.onTintColor=ZXRed;self.sw.transform=CGAffineTransformMakeScale(.75,.75);
     [self.sw addTarget:self action:@selector(swCh:) forControlEvents:UIControlEventValueChanged];[_card addSubview:self.sw];
     _photo=[UIImageView new];_photo.translatesAutoresizingMaskIntoConstraints=NO;
-    _photo.contentMode=UIViewContentModeScaleAspectFill;_photo.clipsToBounds=YES;
-    _photo.layer.cornerRadius=10;_photo.backgroundColor=[UIColor colorWithWhite:.07 alpha:1];[_card addSubview:_photo];
+    _photo.contentMode=UIViewContentModeScaleAspectFit;_photo.clipsToBounds=YES;
+    _photo.layer.cornerRadius=10;_photo.backgroundColor=[UIColor colorWithWhite:.05 alpha:1];[_card addSubview:_photo];
     [NSLayoutConstraint activateConstraints:@[
         [_card.topAnchor constraintEqualToAnchor:self.contentView.topAnchor constant:4],
         [_card.bottomAnchor constraintEqualToAnchor:self.contentView.bottomAnchor constant:-4],
@@ -231,7 +241,7 @@ static void ZXRedGlow(UIView*v,CGFloat r){
         [_photo.topAnchor constraintEqualToAnchor:self.statusLbl.bottomAnchor constant:8],
         [_photo.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:12],
         [_photo.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor constant:-12],
-        [_photo.heightAnchor constraintEqualToConstant:160],
+        [_photo.heightAnchor constraintEqualToConstant:170],
         [_photo.bottomAnchor constraintEqualToAnchor:_card.bottomAnchor constant:-12],
     ]];
     return self;
@@ -242,8 +252,11 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     if(s.imageUrl.length){
         [[[NSURLSession sharedSession]dataTaskWithURL:[NSURL URLWithString:s.imageUrl]
           completionHandler:^(NSData*d,NSURLResponse*r,NSError*e){
-            if(d){UIImage*img=[UIImage imageWithData:d];
-                if(img)dispatch_async(dispatch_get_main_queue(),^{self->_photo.image=img;});}
+            if(d && d.length > 100){
+                UIImage*raw=[UIImage imageWithData:d];
+                UIImage*img=ZXFixOrientation(raw);
+                if(img)dispatch_async(dispatch_get_main_queue(),^{self->_photo.image=img;});
+            }
         }]resume];
     }
 }

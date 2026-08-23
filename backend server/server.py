@@ -254,8 +254,8 @@ def kb_edit(opt, sid):
         [IK("Name",      f"e:name:{opt}:{sid}"),  IK("Desc",     f"e:desc:{opt}:{sid}")],
         [IK("FFTH Path", f"e:ffth:{opt}:{sid}"),  IK("FFMAX Path",f"e:ffmax:{opt}:{sid}")],
         [IK("Upload File",f"e:file:{opt}:{sid}"), IK("Photo",    f"e:photo:{opt}:{sid}")],
-        [IK("Rename",    f"e:rename:{opt}:{sid}"),IK("Delete",   f"e:del:{opt}:{sid}")],
-        [IK("Back",      f"sl:{opt}")],
+        [IK("🔄 Rotate Photo", f"e:rot:{opt}:{sid}"), IK("Rename", f"e:rename:{opt}:{sid}")],
+        [IK("Delete",    f"e:del:{opt}:{sid}"),   IK("Back",      f"sl:{opt}")],
     ])
 
 def kb_type():
@@ -471,6 +471,21 @@ async def cb_main(u: Update, c: ContextTypes.DEFAULT_TYPE):
             await safe_edit(q, "📤 *File bhejo:*\nDocument/file send karo:", kb_back()); return FILE_UP
         if action == "photo":
             await safe_edit(q, "🖼 *Photo bhejo:*\nImage send karo:", kb_back()); return PHOTO_UP
+        if action == "rot":
+            folder = slot_dir(opt, sid)
+            cover = folder / "cover.jpg"
+            if cover.exists():
+                try:
+                    from PIL import Image
+                    with Image.open(str(cover)) as im:
+                        rotated = im.transpose(Image.ROTATE_270)
+                        rotated.save(str(cover), format="JPEG", quality=95)
+                    await safe_edit(q, f"✅ *Photo rotated 90° clockwise!*", kb_edit(opt, sid))
+                except Exception as ex:
+                    await safe_edit(q, f"❌ Error rotating photo: {ex}", kb_edit(opt, sid))
+            else:
+                await safe_edit(q, "❌ Koi photo upload nahi hai.", kb_edit(opt, sid))
+            return MAIN
         if action == "del":
             cfg = lcfg(); key = f"option{opt}Slots"
             slot = next((s for s in cfg.get(key,[]) if s["id"]==sid), None)
@@ -720,6 +735,13 @@ async def msg_photo_up(u: Update, c: ContextTypes.DEFAULT_TYPE):
     for f in folder.glob("cover.*"): f.unlink(missing_ok=True)
     dest = folder / "cover.jpg"
     await tg_file.download_to_drive(str(dest))
+    try:
+        from PIL import Image, ImageOps
+        with Image.open(str(dest)) as im:
+            im = ImageOps.exif_transpose(im)
+            im.save(str(dest), format="JPEG", quality=95)
+    except Exception as ex:
+        log.warning(f"Image transpose error: {ex}")
     # Update imageUrl in config
     cfg = lcfg()
     slot = next((s for s in cfg.get(f"option{opt}Slots",[]) if s["id"]==sid), None)
