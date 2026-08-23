@@ -857,7 +857,7 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
 }
 -(void)tabTap:(UIButton*)b{[self switchTab:b.tag];}
 -(void)openTG{
-    NSString*u=_cfg.telegram.length?_cfg.telegram:@"https://t.me/zexinjector";
+    NSString*u=_cfg.telegram.length?_cfg.telegram:@"https://t.me/nothing6769";
     [[UIApplication sharedApplication]openURL:[NSURL URLWithString:u] options:@{} completionHandler:nil];
 }
 // ── Build UI ──────────────────────────────────────────────────────
