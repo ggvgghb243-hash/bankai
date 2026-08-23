@@ -93,6 +93,11 @@
       "fileName": "slot10.bin"
     }
   ],
+  "option1Name": "AIM LOCK",
+  "option2Name": "LOCATION",
+  "option3Name": "MOD SKIN",
+  "option4Name": "EXTRA",
   "option3Images": [],
-  "option3Slots": []
+  "option3Slots": [],
+  "option4Slots": []
 }

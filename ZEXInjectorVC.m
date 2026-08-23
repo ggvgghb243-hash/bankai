@@ -47,9 +47,9 @@ static void ZXRedGlow(UIView*v,CGFloat r){
 
 @interface ZXConfig : NSObject
 @property NSString *version,*telegram,*appName;
-@property NSString *opt1Name,*opt2Name,*opt3Name;
+@property NSString *opt1Name,*opt2Name,*opt3Name,*opt4Name;
 @property NSString *rm1Name,*rm2Name,*rm1ffth,*rm1ffmax,*rm2ffth,*rm2ffmax;
-@property NSArray<ZXSlot*>*opt1,*opt2,*opt3;
+@property NSArray<ZXSlot*>*opt1,*opt2,*opt3,*opt4;
 +(void)fetch:(void(^)(ZXConfig*,NSError*))cb;
 @end
 @implementation ZXConfig
@@ -76,16 +76,18 @@ static void ZXRedGlow(UIView*v,CGFloat r){
         c.opt1Name=j[@"option1Name"]?:@"OPTION 1";
         c.opt2Name=j[@"option2Name"]?:@"OPTION 2";
         c.opt3Name=j[@"option3Name"]?:@"OPTION 3";
+        c.opt4Name=j[@"option4Name"]?:@"EXTRA";
         NSDictionary*r1=j[@"remove1"]?:@{};NSDictionary*r2=j[@"remove2"]?:@{};
         c.rm1Name=r1[@"name"]?:j[@"remove1Name"]?:@"RESTORE 1";
         c.rm2Name=r2[@"name"]?:j[@"remove2Name"]?:@"RESTORE 2";
         c.rm1ffth=r1[@"ffthPath"]?:@"";c.rm1ffmax=r1[@"ffmaxPath"]?:@"";
         c.rm2ffth=r2[@"ffthPath"]?:@"";c.rm2ffmax=r2[@"ffmaxPath"]?:@"";
-        NSMutableArray*o1=[NSMutableArray array],*o2=[NSMutableArray array],*o3=[NSMutableArray array];
+        NSMutableArray*o1=[NSMutableArray array],*o2=[NSMutableArray array],*o3=[NSMutableArray array],*o4=[NSMutableArray array];
         for(NSDictionary*dd in j[@"option1Slots"]?:@[])[o1 addObject:[self slotFrom:dd]];
         for(NSDictionary*dd in j[@"option2Slots"]?:@[])[o2 addObject:[self slotFrom:dd]];
         for(NSDictionary*dd in j[@"option3Slots"]?:@[])[o3 addObject:[self slotFrom:dd]];
-        c.opt1=o1;c.opt2=o2;c.opt3=o3;
+        for(NSDictionary*dd in j[@"option4Slots"]?:@[])[o4 addObject:[self slotFrom:dd]];
+        c.opt1=o1;c.opt2=o2;c.opt3=o3;c.opt4=o4;
         dispatch_async(dispatch_get_main_queue(),^{cb(c,nil);});
     }]resume];
 }
@@ -352,7 +354,7 @@ static void ZXRedGlow(UIView*v,CGFloat r){
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
 -(NSArray<ZXSlot*>*)currentSlots{
     if(!_cfg)return @[];
-    return _tab==0?_cfg.opt1:_tab==1?_cfg.opt2:_cfg.opt3?:@[];
+    return _tab==0?_cfg.opt1:_tab==1?_cfg.opt2:_tab==2?_cfg.opt3:_cfg.opt4?:@[];
 }
 -(NSString*)mcmBase{
     NSString*r=ZEXFileService.shared.virtualRoot;
@@ -396,8 +398,8 @@ static void ZXRedGlow(UIView*v,CGFloat r){
         self->_connLbl.text=@"Connected";self->_connLbl.textColor=ZXGreen;
         self->_headerConn.text=@"Connected";self->_headerConn.textColor=ZXGreen;
         self->_verLbl.text=[NSString stringWithFormat:@"v%@",c.version];
-        NSArray*tn=@[c.opt1Name,c.opt2Name,c.opt3Name];
-        for(NSInteger i=0;i<3&&i<(NSInteger)self->_tabBtns.count;i++){
+        NSArray*tn=@[c.opt1Name?:@"AIM LOCK",c.opt2Name?:@"LOCATION",c.opt3Name?:@"MOD SKIN",c.opt4Name?:@"EXTRA"];
+        for(NSInteger i=0;i<4&&i<(NSInteger)self->_tabBtns.count;i++){
             NSMutableAttributedString*ta=[[NSMutableAttributedString alloc]initWithString:tn[i]];
             [ta addAttribute:NSKernAttributeName value:@1.5 range:NSMakeRange(0,((NSString*)tn[i]).length)];
             [(UIButton*)self->_tabBtns[i] setAttributedTitle:ta forState:0];
@@ -742,20 +744,20 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     tabBar.layer.borderWidth=.5;tabBar.layer.borderColor=[UIColor colorWithWhite:1 alpha:.06].CGColor;
     [self.view addSubview:tabBar];
     NSMutableArray<UIButton*>*btns=[NSMutableArray array];
-    NSArray*tt=@[@"OPTION 1",@"OPTION 2",@"OPTION 3"];
-    for(NSInteger i=0;i<3;i++){
+    NSArray*tt=@[@"AIM LOCK",@"LOCATION",@"MOD SKIN",@"EXTRA"];
+    for(NSInteger i=0;i<4;i++){
         UIButton*tb=[UIButton buttonWithType:UIButtonTypeSystem];tb.translatesAutoresizingMaskIntoConstraints=NO;
         NSMutableAttributedString*ta=[[NSMutableAttributedString alloc]initWithString:tt[i]];
-        [ta addAttribute:NSKernAttributeName value:@1.5 range:NSMakeRange(0,((NSString*)tt[i]).length)];
+        [ta addAttribute:NSKernAttributeName value:@1.0 range:NSMakeRange(0,((NSString*)tt[i]).length)];
         [tb setAttributedTitle:ta forState:0];
         [tb setTitleColor:(i==0?UIColor.whiteColor:ZXGray) forState:0];
-        tb.titleLabel.font=[UIFont systemFontOfSize:11 weight:(i==0?UIFontWeightBold:UIFontWeightRegular)];
+        tb.titleLabel.font=[UIFont systemFontOfSize:10 weight:(i==0?UIFontWeightBold:UIFontWeightRegular)];
         tb.tag=i;[tb addTarget:self action:@selector(tabTap:) forControlEvents:UIControlEventTouchUpInside];
         [tabBar addSubview:tb];[btns addObject:tb];
         [NSLayoutConstraint activateConstraints:@[
             [tb.topAnchor constraintEqualToAnchor:tabBar.topAnchor],
             [tb.bottomAnchor constraintEqualToAnchor:tabBar.safeAreaLayoutGuide.bottomAnchor],
-            [tb.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/3],
+            [tb.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/4],
         ]];
         if(i==0)[tb.leadingAnchor constraintEqualToAnchor:tabBar.leadingAnchor].active=YES;
         else [tb.leadingAnchor constraintEqualToAnchor:((UIButton*)btns[i-1]).trailingAnchor].active=YES;
