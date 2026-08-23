@@ -97,7 +97,24 @@
   "option2Name": "LOCATION",
   "option3Name": "MOD SKIN",
   "option4Name": "EXTRA",
-  "option3Images": [],
-  "option3Slots": [],
-  "option4Slots": []
+  "option4Slots": [
+    {
+      "id": 1,
+      "name": "BYPASS FFTH",
+      "description": "APPLY AFTER LEAVING GAME",
+      "type": "AB",
+      "fileName": "",
+      "fileUrl": "",
+      "ffthPath": "com.dts.freefireth/Documents/contentcache/Compulsory/ios/gameassetbundles/"
+    },
+    {
+      "id": 2,
+      "name": "BYPASS FF MAX",
+      "description": "APPLY AFTER LEAVING GAME",
+      "type": "AB",
+      "fileName": "",
+      "fileUrl": "",
+      "ffmaxPath": "com.dts.freefiremax/Documents/contentcache/Compulsory/ios/gameassetbundles/"
+    }
+  ]
 }

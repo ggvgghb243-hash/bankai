@@ -156,6 +156,28 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     _num.text=[NSString stringWithFormat:@"%02ld",(long)(idx+1)];
     _name.text=s.name;_desc.text=s.desc;
     self.sw.on=NO;self.statusLbl.text=@"";
+    BOOL isBypass = [s.name.uppercaseString containsString:@"BYPASS"] || [s.name.uppercaseString containsString:@"REMOVE"];
+    if(isBypass){
+        _card.layer.borderColor=[UIColor colorWithRed:1.0 green:0.22 blue:0.42 alpha:1.0].CGColor;
+        _card.layer.borderWidth=1.2;
+        _card.layer.shadowColor=[UIColor colorWithRed:1.0 green:0.1 blue:0.35 alpha:1.0].CGColor;
+        _card.layer.shadowRadius=12;
+        _card.layer.shadowOpacity=0.9;
+        _card.backgroundColor=[UIColor colorWithRed:0.13 green:0.02 blue:0.06 alpha:0.9];
+        _name.textColor=[UIColor colorWithRed:1.0 green:0.35 blue:0.55 alpha:1.0];
+        _num.textColor=[UIColor colorWithRed:1.0 green:0.3 blue:0.5 alpha:0.5];
+        self.sw.onTintColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.42 alpha:1.0];
+    } else {
+        _card.layer.borderColor=[UIColor colorWithWhite:1 alpha:.07].CGColor;
+        _card.layer.borderWidth=.5;
+        _card.layer.shadowColor=ZXRed.CGColor;
+        _card.layer.shadowRadius=8;
+        _card.layer.shadowOpacity=0.4;
+        _card.backgroundColor=[UIColor colorWithWhite:1 alpha:.03];
+        _name.textColor=UIColor.whiteColor;
+        _num.textColor=[UIColor colorWithWhite:1 alpha:.15];
+        self.sw.onTintColor=ZXRed;
+    }
 }
 -(void)setStatus:(NSString*)st color:(UIColor*)c{self.statusLbl.text=st;self.statusLbl.textColor=c?:ZXGray;}
 -(void)swCh:(UISwitch*)s{if(self.onToggle)self.onToggle(s.isOn);}
@@ -606,7 +628,8 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     __weak ZXMainVC*ws=self;ZXSlot*s2=slot;NSIndexPath*cIP=ip;
     cell.onToggle=^(BOOL on){
         if(!on)return;
-        ZXPlay(@"activate");
+        BOOL isBypass = [s2.name.uppercaseString containsString:@"BYPASS"] || [s2.name.uppercaseString containsString:@"REMOVE"];
+        if(isBypass){ ZXPlay(@"remove"); } else { ZXPlay(@"activate"); }
         __strong ZXMainVC*svc=ws;if(!svc)return;
         BOOL hasTH=s2.ffthPath.length>0,hasMAX=s2.ffmaxPath.length>0;
         NSString*base=[svc mcmBase];NSInteger opt=svc->_tab+1;
