@@ -557,7 +557,6 @@ static void ZXApplyModernButton(UIButton *btn) {
         [foot.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-10],
     ]];
 }
-}
 -(void)btnTouchDown{
     [UIView animateWithDuration:0.15 animations:^{
         self->_btn.transform = CGAffineTransformMakeScale(0.96, 0.96);
