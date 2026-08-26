@@ -968,8 +968,6 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     [[UIApplication sharedApplication]openURL:[NSURL URLWithString:u] options:@{} completionHandler:nil];
 }
 -(void)showSettingsInfo{
-    NSString *model = [UIDevice currentDevice].model;
-    NSString *devName = [UIDevice currentDevice].name;
     NSString *osVer = [UIDevice currentDevice].systemVersion;
     NSString *hwid = ZXGetHWID();
     NSString *savedKey = [[NSUserDefaults standardUserDefaults] stringForKey:kSavedKey] ?: @"N/A";
@@ -978,8 +976,6 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     
     NSString *msg = [NSString stringWithFormat:
         @"📱 DEVICE INFORMATION\n"
-        @"Name: %@\n"
-        @"Model: %@\n"
         @"OS: iOS %@\n"
         @"HWID: %@... (1-DEV LOCKED)\n\n"
         @"🔑 LICENSE DETAILS\n"
@@ -988,10 +984,9 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
         @"Created: %@\n"
         @"Expires: %@\n\n"
         @"⚙️ SYSTEM STATUS\n"
-        @"Engine: MCM Sandbox Bypass\n"
-        @"Node: 144.172.105.169:9002 (ONLINE)\n"
+        @"Status: OPERATIONAL\n"
         @"Version: v%@",
-        devName, model, osVer, [hwid substringToIndex:MIN(14, hwid.length)].uppercaseString, savedKey, createdAt, expiresAt, _cfg.version ?: @"2.8.0"];
+        osVer, [hwid substringToIndex:MIN(14, hwid.length)].uppercaseString, savedKey, createdAt, expiresAt, _cfg.version ?: @"1.0"];
         
     UIAlertController *ac = [UIAlertController alertControllerWithTitle:@"⚙️ SYSTEM & LICENSE INFO"
                                                                 message:msg
