@@ -1,4 +1,4 @@
-﻿name: Build Bankai ZEX INJECTOR IPA
+name: Build Bankai ZEX INJECTOR IPA
 
 on:
   workflow_dispatch:
@@ -59,7 +59,7 @@ jobs:
           
           echo "Current directory: $(pwd)"
           make clean
-          make FINALPACKAGE=1
+          make messages=yes FINALPACKAGE=1
           
           echo "=== Build output directories ==="
           find .theos -type d -name "*.app" || true
