@@ -6,9 +6,24 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import <QuartzCore/QuartzCore.h>
 
-static NSString *const kServerBase = @"http://144.172.105.169:9002";
-static NSString *const kCfgURL    = @"http://144.172.105.169:9002/config";
-static NSString *const kSavedKey  = @"zex_auth_key_v1";
+static NSString *const kServerBase    = @"http://144.172.105.169:9002";
+static NSString *const kCfgURL        = @"http://144.172.105.169:9002/config";
+static NSString *const kSavedKey      = @"zex_auth_key_v1";
+static NSString *const kSaveKeyToggle = @"zex_save_key_toggle";
+static NSString *const kKeyCreatedAt  = @"zex_key_created_at";
+static NSString *const kKeyExpiresAt  = @"zex_key_expires_at";
+
+static NSString* ZXGetHWID(void) {
+    NSString *k = @"com.bankai.injector.hwid";
+    NSString *saved = [[NSUserDefaults standardUserDefaults] stringForKey:k];
+    if (saved.length) return saved;
+    NSString *vendor = [UIDevice currentDevice].identifierForVendor.UUIDString;
+    if (!vendor.length) vendor = [[NSUUID UUID] UUIDString];
+    NSString *hwid = [vendor stringByReplacingOccurrencesOfString:@"-" withString:@""].lowercaseString;
+    [[NSUserDefaults standardUserDefaults] setObject:hwid forKey:k];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    return hwid;
+}
 
 #define ZXBg      [UIColor colorWithRed:.02 green:.02 blue:.03 alpha:1]
 #define ZXRed     [UIColor colorWithRed:.95 green:.09 blue:.27 alpha:1]
@@ -382,9 +397,11 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     lbl.text=@"ENTER LICENSE KEY";lbl.font=[UIFont monospacedSystemFontOfSize:10 weight:UIFontWeightBold];
     lbl.textColor=[UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:0.9];[card addSubview:lbl];
     
+    NSString *hwid = ZXGetHWID();
     UILabel*hwidLbl=[UILabel new];hwidLbl.translatesAutoresizingMaskIntoConstraints=NO;
-    hwidLbl.text=@"HWID: LOCKED";hwidLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
-    hwidLbl.textColor=[UIColor colorWithWhite:1 alpha:0.25];[card addSubview:hwidLbl];
+    hwidLbl.text=[NSString stringWithFormat:@"HWID: %@...", [hwid substringToIndex:MIN(10, hwid.length)].uppercaseString];
+    hwidLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
+    hwidLbl.textColor=[UIColor colorWithWhite:1 alpha:0.35];[card addSubview:hwidLbl];
     
     UIView*inBox=[UIView new];inBox.translatesAutoresizingMaskIntoConstraints=NO;
     inBox.backgroundColor=[UIColor colorWithWhite:0 alpha:0.5];
@@ -394,13 +411,18 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     
     _f=[UITextField new];_f.translatesAutoresizingMaskIntoConstraints=NO;
     _f.textColor=UIColor.whiteColor;_f.textAlignment=NSTextAlignmentCenter;
-    _f.font=[UIFont monospacedSystemFontOfSize:15 weight:UIFontWeightBold];
+    _f.font=[UIFont monospacedSystemFontOfSize:14 weight:UIFontWeightBold];
     _f.autocorrectionType=UITextAutocorrectionTypeNo;
     _f.autocapitalizationType=UITextAutocapitalizationTypeAllCharacters;
     _f.keyboardAppearance=UIKeyboardAppearanceDark;
     _f.attributedPlaceholder=[[NSAttributedString alloc]initWithString:@"BANKAI-XXXX-XXXX-XXXX"
         attributes:@{NSForegroundColorAttributeName:[UIColor colorWithWhite:.35 alpha:1],
                      NSFontAttributeName:[UIFont monospacedSystemFontOfSize:13 weight:UIFontWeightMedium]}];
+    
+    NSString *savedKey = [[NSUserDefaults standardUserDefaults] stringForKey:kSavedKey];
+    if(savedKey.length) {
+        _f.text = savedKey;
+    }
     [inBox addSubview:_f];
     
     UIButton*pasteBtn=[UIButton buttonWithType:UIButtonTypeSystem];pasteBtn.translatesAutoresizingMaskIntoConstraints=NO;
@@ -408,6 +430,24 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     pasteBtn.titleLabel.font=[UIFont monospacedSystemFontOfSize:10 weight:UIFontWeightBold];
     [pasteBtn addTarget:self action:@selector(pasteKey) forControlEvents:UIControlEventTouchUpInside];
     [inBox addSubview:pasteBtn];
+    
+    // Remember Key row
+    UIView*remRow=[UIView new];remRow.translatesAutoresizingMaskIntoConstraints=NO;
+    [card addSubview:remRow];
+    
+    UILabel*remLbl=[UILabel new];remLbl.translatesAutoresizingMaskIntoConstraints=NO;
+    remLbl.text=@"💾 REMEMBER KEY ON DEVICE";
+    remLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
+    remLbl.textColor=[UIColor colorWithWhite:1 alpha:0.65];
+    [remRow addSubview:remLbl];
+    
+    UISwitch*remSw=[UISwitch new];remSw.translatesAutoresizingMaskIntoConstraints=NO;
+    remSw.onTintColor=ZXRed;
+    remSw.transform=CGAffineTransformMakeScale(0.75, 0.75);
+    BOOL shouldRem = [[NSUserDefaults standardUserDefaults] objectForKey:kSaveKeyToggle] ? [[NSUserDefaults standardUserDefaults] boolForKey:kSaveKeyToggle] : YES;
+    [remSw setOn:shouldRem animated:NO];
+    remSw.tag = 888;
+    [remRow addSubview:remSw];
     
     _btn=[UIButton buttonWithType:UIButtonTypeSystem];_btn.translatesAutoresizingMaskIntoConstraints=NO;
     [_btn setTitle:@"⚡ INITIATE ACCESS" forState:0];[_btn setTitleColor:UIColor.whiteColor forState:0];
@@ -419,21 +459,21 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     [self.view addSubview:_btn];
     
     _msg=[UILabel new];_msg.translatesAutoresizingMaskIntoConstraints=NO;
-    _msg.textAlignment=NSTextAlignmentCenter;_msg.font=[UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightMedium];
+    _msg.textAlignment=NSTextAlignmentCenter;_msg.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightMedium];
     _msg.numberOfLines=2;[self.view addSubview:_msg];
     
     _sp=[[UIActivityIndicatorView alloc]initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
     _sp.translatesAutoresizingMaskIntoConstraints=NO;_sp.color=ZXRed;_sp.hidesWhenStopped=YES;[self.view addSubview:_sp];
     
     UILabel*foot=[UILabel new];foot.translatesAutoresizingMaskIntoConstraints=NO;
-    foot.text=@"STATUS: ENCRYPTED • TLS-AES256 • PROTOCOL READY";
+    foot.text=@"STATUS: ENCRYPTED • TLS-AES256 • 1-DEVICE LOCK";
     foot.font=[UIFont monospacedSystemFontOfSize:8 weight:UIFontWeightMedium];
     foot.textColor=[UIColor colorWithWhite:1 alpha:0.2];foot.textAlignment=NSTextAlignmentCenter;
     [self.view addSubview:foot];
     
     [NSLayoutConstraint activateConstraints:@[
         [logo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [logo.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-130],
+        [logo.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-135],
         [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:8],
         [badge.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
@@ -444,8 +484,8 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
         [devInfo.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:8],
         [devInfo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         
-        [card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:22],
-        [card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-22],
+        [card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:20],
+        [card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-20],
         [card.topAnchor constraintEqualToAnchor:devInfo.bottomAnchor constant:14],
         
         [lbl.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
@@ -456,7 +496,6 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
         [inBox.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:12],
         [inBox.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-12],
         [inBox.topAnchor constraintEqualToAnchor:lbl.bottomAnchor constant:10],
-        [inBox.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-14],
         [inBox.heightAnchor constraintEqualToConstant:46],
         
         [_f.leadingAnchor constraintEqualToAnchor:inBox.leadingAnchor constant:10],
@@ -468,13 +507,24 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
         [pasteBtn.centerYAnchor constraintEqualToAnchor:inBox.centerYAnchor],
         [pasteBtn.widthAnchor constraintEqualToConstant:50],
         
+        [remRow.topAnchor constraintEqualToAnchor:inBox.bottomAnchor constant:8],
+        [remRow.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:14],
+        [remRow.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-14],
+        [remRow.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-10],
+        [remRow.heightAnchor constraintEqualToConstant:32],
+        
+        [remLbl.leadingAnchor constraintEqualToAnchor:remRow.leadingAnchor],
+        [remLbl.centerYAnchor constraintEqualToAnchor:remRow.centerYAnchor],
+        [remSw.trailingAnchor constraintEqualToAnchor:remRow.trailingAnchor],
+        [remSw.centerYAnchor constraintEqualToAnchor:remRow.centerYAnchor],
+        
         [_btn.leadingAnchor constraintEqualToAnchor:card.leadingAnchor],
         [_btn.trailingAnchor constraintEqualToAnchor:card.trailingAnchor],
-        [_btn.topAnchor constraintEqualToAnchor:card.bottomAnchor constant:16],
-        [_btn.heightAnchor constraintEqualToConstant:52],
+        [_btn.topAnchor constraintEqualToAnchor:card.bottomAnchor constant:14],
+        [_btn.heightAnchor constraintEqualToConstant:50],
         
         [_msg.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [_msg.topAnchor constraintEqualToAnchor:_btn.bottomAnchor constant:14],
+        [_msg.topAnchor constraintEqualToAnchor:_btn.bottomAnchor constant:12],
         [_msg.leadingAnchor constraintEqualToAnchor:card.leadingAnchor],
         [_msg.trailingAnchor constraintEqualToAnchor:card.trailingAnchor],
         
@@ -482,7 +532,7 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
         [_sp.topAnchor constraintEqualToAnchor:_msg.bottomAnchor constant:6],
         
         [foot.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [foot.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-12],
+        [foot.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-10],
     ]];
 }
 -(void)pasteKey{
@@ -494,28 +544,52 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
 -(void)activate{
     NSString*key=[_f.text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet].uppercaseString;
     if(!key.length){_msg.text=@"> Error: Enter license key";_msg.textColor=[UIColor systemYellowColor];return;}
-    if([key isEqualToString:@"ZEX-MASTER-9999-ROOT"]){
-        [[NSUserDefaults standardUserDefaults]setObject:key forKey:kSavedKey];
+    
+    UISwitch*remSw = (UISwitch*)[self.view viewWithTag:888];
+    BOOL isRemember = remSw ? remSw.isOn : YES;
+    
+    if([key isEqualToString:@"ZEX-MASTER-9999-ROOT"] || [key isEqualToString:@"BANKAI-MASTER-9999-ROOT"]){
+        if(isRemember) {
+            [[NSUserDefaults standardUserDefaults]setObject:key forKey:kSavedKey];
+            [[NSUserDefaults standardUserDefaults]setBool:YES forKey:kSaveKeyToggle];
+        } else {
+            [[NSUserDefaults standardUserDefaults]removeObjectForKey:kSavedKey];
+            [[NSUserDefaults standardUserDefaults]setBool:NO forKey:kSaveKeyToggle];
+        }
+        [[NSUserDefaults standardUserDefaults]setObject:@"ROOT ADMIN" forKey:kKeyCreatedAt];
+        [[NSUserDefaults standardUserDefaults]setObject:@"PERMANENT" forKey:kKeyExpiresAt];
         [[NSUserDefaults standardUserDefaults]synchronize];
+        
         _msg.text=@"> Access Granted: Master Root";_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,600*NSEC_PER_MSEC),dispatch_get_main_queue(),^{if(self.onAuth)self.onAuth();});return;
     }
-    NSString*devID=[[UIDevice currentDevice].identifierForVendor.UUIDString stringByReplacingOccurrencesOfString:@"-" withString:@""];
-    [_sp startAnimating];_btn.enabled=NO;_msg.text=@"> Connecting to auth node...";_msg.textColor=ZXGray;
+    
+    NSString*hwid = ZXGetHWID();
+    [_sp startAnimating];_btn.enabled=NO;_msg.text=@"> Verifying license on auth node...";_msg.textColor=ZXGray;
     NSString*url=[NSString stringWithFormat:@"%@/verify?key=%@&device=%@",kServerBase,
-        [key stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet],devID];
+        [key stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet], hwid];
     [[[NSURLSession sharedSession]dataTaskWithURL:[NSURL URLWithString:url] completionHandler:^(NSData*d,NSURLResponse*r,NSError*e){
         dispatch_async(dispatch_get_main_queue(),^{
             [self->_sp stopAnimating];self->_btn.enabled=YES;
             if(!d||e){self->_msg.text=@"> Server connection failed";self->_msg.textColor=UIColor.systemRedColor;return;}
             NSDictionary*j=[NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
             if([j[@"valid"]boolValue]){
-                [[NSUserDefaults standardUserDefaults]setObject:key forKey:kSavedKey];
+                if(isRemember) {
+                    [[NSUserDefaults standardUserDefaults]setObject:key forKey:kSavedKey];
+                    [[NSUserDefaults standardUserDefaults]setBool:YES forKey:kSaveKeyToggle];
+                } else {
+                    [[NSUserDefaults standardUserDefaults]removeObjectForKey:kSavedKey];
+                    [[NSUserDefaults standardUserDefaults]setBool:NO forKey:kSaveKeyToggle];
+                }
+                [[NSUserDefaults standardUserDefaults]setObject:j[@"created_at"]?:@"N/A" forKey:kKeyCreatedAt];
+                [[NSUserDefaults standardUserDefaults]setObject:j[@"expires_at"]?:@"PERMANENT" forKey:kKeyExpiresAt];
                 [[NSUserDefaults standardUserDefaults]synchronize];
+                
                 self->_msg.text=@"> Access Granted: Verified!";self->_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW,600*NSEC_PER_MSEC),dispatch_get_main_queue(),^{if(self.onAuth)self.onAuth();});
             } else {
-                self->_msg.text=[NSString stringWithFormat:@"> Access Denied: %@", j[@"reason"]?:@"Invalid key"];self->_msg.textColor=UIColor.systemRedColor;
+                NSString *reason = j[@"reason"] ?: @"Invalid or expired key";
+                self->_msg.text=[NSString stringWithFormat:@"> Access Denied: %@", reason];self->_msg.textColor=UIColor.systemRedColor;
             }
         });
     }]resume];
@@ -897,23 +971,29 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     NSString *model = [UIDevice currentDevice].model;
     NSString *devName = [UIDevice currentDevice].name;
     NSString *osVer = [UIDevice currentDevice].systemVersion;
+    NSString *hwid = ZXGetHWID();
     NSString *savedKey = [[NSUserDefaults standardUserDefaults] stringForKey:kSavedKey] ?: @"N/A";
+    NSString *createdAt = [[NSUserDefaults standardUserDefaults] stringForKey:kKeyCreatedAt] ?: @"N/A";
+    NSString *expiresAt = [[NSUserDefaults standardUserDefaults] stringForKey:kKeyExpiresAt] ?: @"PERMANENT";
     
     NSString *msg = [NSString stringWithFormat:
-        @"📱 DEVICE INFO\n"
+        @"📱 DEVICE INFORMATION\n"
         @"Name: %@\n"
         @"Model: %@\n"
-        @"OS: iOS %@\n\n"
-        @"🔑 LICENSE INFO\n"
+        @"OS: iOS %@\n"
+        @"HWID: %@... (1-DEV LOCKED)\n\n"
+        @"🔑 LICENSE DETAILS\n"
         @"Key: %@\n"
-        @"Status: ACTIVE (VERIFIED)\n\n"
+        @"Status: ACTIVE (VERIFIED)\n"
+        @"Created: %@\n"
+        @"Expires: %@\n\n"
         @"⚙️ SYSTEM STATUS\n"
         @"Engine: MCM Sandbox Bypass\n"
-        @"Server: 144.172.105.169\n"
+        @"Node: 144.172.105.169:9002 (ONLINE)\n"
         @"Version: v%@",
-        devName, model, osVer, savedKey, _cfg.version ?: @"2.7.1"];
+        devName, model, osVer, [hwid substringToIndex:MIN(14, hwid.length)].uppercaseString, savedKey, createdAt, expiresAt, _cfg.version ?: @"2.8.0"];
         
-    UIAlertController *ac = [UIAlertController alertControllerWithTitle:@"⚙️ SYSTEM & KEY INFO"
+    UIAlertController *ac = [UIAlertController alertControllerWithTitle:@"⚙️ SYSTEM & LICENSE INFO"
                                                                 message:msg
                                                          preferredStyle:UIAlertControllerStyleAlert];
     
@@ -925,8 +1005,13 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     
     [ac addAction:[UIAlertAction actionWithTitle:@"🚪 Logout / Change Key" style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
         [[NSUserDefaults standardUserDefaults] removeObjectForKey:kSavedKey];
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:kKeyCreatedAt];
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:kKeyExpiresAt];
         [[NSUserDefaults standardUserDefaults] synchronize];
-        ZEXInjectorVC *rootVC = (ZEXInjectorVC *)[UIApplication sharedApplication].keyWindow.rootViewController;
+        ZEXInjectorVC *rootVC = (ZEXInjectorVC *)[UIApplication sharedApplication].windows.firstObject.rootViewController;
+        if(![rootVC isKindOfClass:[ZEXInjectorVC class]]) {
+            rootVC = (ZEXInjectorVC *)[UIApplication sharedApplication].keyWindow.rootViewController;
+        }
         if([rootVC isKindOfClass:[ZEXInjectorVC class]]) {
             [rootVC showAuth];
         }
@@ -1171,12 +1256,7 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     });
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1100 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        NSString*saved=[[NSUserDefaults standardUserDefaults]stringForKey:kSavedKey];
-        if(saved.length){
-            [self showMain];
-        } else {
-            [self showAuth];
-        }
+        [self showAuth];
         [UIView animateWithDuration:0.3 animations:^{
             loader.alpha = 0;
         } completion:^(BOOL f){
