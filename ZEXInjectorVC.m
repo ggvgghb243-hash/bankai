@@ -5,6 +5,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioToolbox.h>
 #import <QuartzCore/QuartzCore.h>
+#import <ImageIO/ImageIO.h>
 
 static NSString *const kServerBase    = @"http://144.172.105.169:9002";
 static NSString *const kCfgURL        = @"http://144.172.105.169:9002/config";
@@ -280,49 +281,92 @@ static UIImage* ZXFixOrientation(UIImage* src) {
 -(void)swCh:(UISwitch*)s{if(self.onToggle)self.onToggle(s.isOn);}
 @end
 
-// ── Modern Minimal UI Helpers ─────────────────────────────────────
-static void ZXAddModernBackground(UIView *view) {
-    CAGradientLayer *bgGrad = [CAGradientLayer layer];
-    bgGrad.frame = view.bounds;
-    bgGrad.colors = @[
-        (id)[UIColor colorWithRed:0.07 green:0.03 blue:0.05 alpha:1.0].CGColor,
-        (id)[UIColor colorWithRed:0.03 green:0.01 blue:0.02 alpha:1.0].CGColor,
-        (id)[UIColor colorWithRed:0.01 green:0.005 blue:0.015 alpha:1.0].CGColor
-    ];
-    bgGrad.locations = @[@0.0, @0.45, @1.0];
-    bgGrad.startPoint = CGPointMake(0.5, 0.0);
-    bgGrad.endPoint = CGPointMake(0.5, 1.0);
-    [view.layer insertSublayer:bgGrad atIndex:0];
+// ── Animated GIF Decoder (ImageIO Native) ───────────────────────────
+static UIImage *ZXLoadAnimatedGIF(NSString *name) {
+    NSData *data = nil;
+    NSString *bundlePath = [[NSBundle mainBundle] pathForResource:name ofType:nil];
+    if(!bundlePath) bundlePath = [[NSBundle mainBundle] pathForResource:name ofType:@"gif"];
+    if(!bundlePath) bundlePath = [[NSBundle mainBundle] pathForResource:@"logo" ofType:@"gif"];
+    if(!bundlePath) bundlePath = [[NSBundle mainBundle] pathForResource:@"GIF by Chandelier Creative" ofType:@"gif"];
     
-    // Subtle top ambient glow
-    UIView *ambientGlow = [[UIView alloc] initWithFrame:CGRectMake((view.bounds.size.width - 240)/2, -50, 240, 240)];
-    ambientGlow.backgroundColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.12];
-    ambientGlow.layer.cornerRadius = 120;
-    ambientGlow.layer.masksToBounds = NO;
-    ambientGlow.layer.shadowColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:1.0].CGColor;
-    ambientGlow.layer.shadowRadius = 70;
-    ambientGlow.layer.shadowOpacity = 0.6;
-    ambientGlow.layer.shadowOffset = CGSizeZero;
-    [view addSubview:ambientGlow];
+    if(bundlePath) {
+        data = [NSData dataWithContentsOfFile:bundlePath];
+    }
+    if(!data) {
+        NSString *doc = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+        NSString *docPath = [doc stringByAppendingPathComponent:name];
+        if([[NSFileManager defaultManager] fileExistsAtPath:docPath]) {
+            data = [NSData dataWithContentsOfFile:docPath];
+        }
+    }
+    if(!data) return nil;
+    
+    CGImageSourceRef source = CGImageSourceCreateWithData((__bridge CFDataRef)data, NULL);
+    if (!source) return nil;
+    
+    size_t count = CGImageSourceGetCount(source);
+    if (count <= 1) {
+        CFRelease(source);
+        return [UIImage imageWithData:data];
+    }
+    
+    NSMutableArray *images = [NSMutableArray arrayWithCapacity:count];
+    NSTimeInterval duration = 0.0;
+    
+    for (size_t i = 0; i < count; i++) {
+        CGImageRef image = CGImageSourceCreateImageAtIndex(source, i, NULL);
+        if (!image) continue;
+        
+        [images addObject:[UIImage imageWithCGImage:image scale:[UIScreen mainScreen].scale orientation:UIImageOrientationUp]];
+        CGImageRelease(image);
+        
+        CFDictionaryRef properties = CGImageSourceCopyPropertiesAtIndex(source, i, NULL);
+        if (properties) {
+            CFDictionaryRef gifProperties = CFDictionaryGetValue(properties, kCGImagePropertyGIFDictionary);
+            if (gifProperties) {
+                NSNumber *delayTime = CFDictionaryGetValue(gifProperties, kCGImagePropertyGIFUnclampedDelayTime);
+                if (!delayTime || [delayTime floatValue] <= 0) {
+                    delayTime = CFDictionaryGetValue(gifProperties, kCGImagePropertyGIFDelayTime);
+                }
+                if ([delayTime floatValue] > 0) {
+                    duration += [delayTime doubleValue];
+                } else {
+                    duration += 0.1;
+                }
+            } else {
+                duration += 0.1;
+            }
+            CFRelease(properties);
+        }
+    }
+    CFRelease(source);
+    
+    if (duration <= 0.0) duration = (1.0 / 10.0) * count;
+    return [UIImage animatedImageWithImages:images duration:duration];
+}
+
+// ── Pure Pitch Black Background ────────────────────────────────────
+static void ZXAddModernBackground(UIView *view) {
+    view.backgroundColor = [UIColor blackColor];
 }
 
 static void ZXApplyModernButton(UIButton *btn) {
-    btn.layer.cornerRadius = 14;
+    btn.layer.cornerRadius = 16;
     btn.layer.masksToBounds = NO;
-    btn.layer.shadowColor = ZXRed.CGColor;
-    btn.layer.shadowOffset = CGSizeMake(0, 4);
-    btn.layer.shadowRadius = 12;
-    btn.layer.shadowOpacity = 0.6;
+    btn.layer.shadowColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:1.0].CGColor;
+    btn.layer.shadowOffset = CGSizeMake(0, 5);
+    btn.layer.shadowRadius = 14;
+    btn.layer.shadowOpacity = 0.55;
     
     CAGradientLayer *btnGrad = [CAGradientLayer layer];
-    btnGrad.frame = CGRectMake(0, 0, 400, 52);
+    btnGrad.frame = CGRectMake(0, 0, 420, 52);
     btnGrad.colors = @[
-        (id)[UIColor colorWithRed:0.96 green:0.14 blue:0.30 alpha:1.0].CGColor,
-        (id)[UIColor colorWithRed:0.75 green:0.06 blue:0.18 alpha:1.0].CGColor
+        (id)[UIColor colorWithRed:0.95 green:0.14 blue:0.32 alpha:1.0].CGColor,
+        (id)[UIColor colorWithRed:0.72 green:0.04 blue:0.18 alpha:1.0].CGColor
     ];
     btnGrad.startPoint = CGPointMake(0, 0);
     btnGrad.endPoint = CGPointMake(1, 1);
-    btnGrad.cornerRadius = 14;
+    btnGrad.cornerRadius = 16;
     [btn.layer insertSublayer:btnGrad atIndex:0];
 }
 
@@ -340,27 +384,23 @@ static void ZXApplyModernButton(UIButton *btn) {
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
 -(void)viewDidLoad{
     [super viewDidLoad];
-    self.view.backgroundColor=[UIColor colorWithRed:0.02 green:0.01 blue:0.02 alpha:1.0];
+    self.view.backgroundColor = [UIColor blackColor];
     ZXAddModernBackground(self.view);
     
-    // Top Brand Logo Icon Badge
-    UIView *iconBox = [UIView new];iconBox.translatesAutoresizingMaskIntoConstraints = NO;
-    iconBox.backgroundColor = [UIColor colorWithRed:0.14 green:0.02 blue:0.05 alpha:0.9];
-    iconBox.layer.cornerRadius = 16;
-    iconBox.layer.borderWidth = 1.2;
-    iconBox.layer.borderColor = [UIColor colorWithRed:0.95 green:0.15 blue:0.3 alpha:0.7].CGColor;
-    iconBox.layer.shadowColor = ZXRed.CGColor;
-    iconBox.layer.shadowRadius = 16;
-    iconBox.layer.shadowOpacity = 0.65;
-    iconBox.layer.shadowOffset = CGSizeZero;
-    [self.view addSubview:iconBox];
-    
-    UILabel *iconLbl = [UILabel new];iconLbl.translatesAutoresizingMaskIntoConstraints = NO;
-    iconLbl.text = @"B";
-    iconLbl.font = [UIFont systemFontOfSize:26 weight:UIFontWeightBlack];
-    iconLbl.textColor = UIColor.whiteColor;
-    iconLbl.textAlignment = NSTextAlignmentCenter;
-    [iconBox addSubview:iconLbl];
+    // Top Animated GIF Logo Container
+    UIImageView *gifView = [UIImageView new];
+    gifView.translatesAutoresizingMaskIntoConstraints = NO;
+    gifView.contentMode = UIViewContentModeScaleAspectFit;
+    gifView.layer.cornerRadius = 24;
+    gifView.layer.masksToBounds = YES;
+    gifView.layer.borderWidth = 1.2;
+    gifView.layer.borderColor = [UIColor colorWithRed:0.95 green:0.15 blue:0.3 alpha:0.6].CGColor;
+    gifView.layer.shadowColor = ZXRed.CGColor;
+    gifView.layer.shadowRadius = 16;
+    gifView.layer.shadowOpacity = 0.6;
+    gifView.layer.shadowOffset = CGSizeZero;
+    gifView.image = ZXLoadAnimatedGIF(@"GIF by Chandelier Creative.gif");
+    [self.view addSubview:gifView];
     
     // Logo Title
     UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
@@ -374,8 +414,8 @@ static void ZXApplyModernButton(UIButton *btn) {
     
     // Security Badge
     UIView*badge=ZXGlassView(10);badge.translatesAutoresizingMaskIntoConstraints=NO;
-    badge.backgroundColor=[UIColor colorWithRed:0.18 green:0.02 blue:0.05 alpha:0.8];
-    badge.layer.cornerRadius=10;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.5].CGColor;
+    badge.backgroundColor=[UIColor colorWithRed:0.14 green:0.02 blue:0.04 alpha:0.85];
+    badge.layer.cornerRadius=10;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.45].CGColor;
     badge.layer.borderWidth=0.8;[self.view addSubview:badge];
     UILabel*badgeLbl=[UILabel new];badgeLbl.translatesAutoresizingMaskIntoConstraints=NO;
     badgeLbl.text=@"🔒 LICENSE AUTHENTICATION";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
@@ -393,7 +433,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     
     // Modern Clean Login Card
     _card = [UIView new];_card.translatesAutoresizingMaskIntoConstraints=NO;
-    _card.backgroundColor = [UIColor colorWithRed:0.08 green:0.02 blue:0.04 alpha:0.88];
+    _card.backgroundColor = [UIColor colorWithRed:0.06 green:0.02 blue:0.035 alpha:0.92];
     _card.layer.cornerRadius = 18;
     _card.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.1].CGColor;
     _card.layer.borderWidth = 1.0;
@@ -414,7 +454,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     hwidLbl.textColor=[UIColor colorWithWhite:1 alpha:0.4];[_card addSubview:hwidLbl];
     
     UIView*inBox=[UIView new];inBox.translatesAutoresizingMaskIntoConstraints=NO;
-    inBox.backgroundColor=[UIColor colorWithWhite:0 alpha:0.55];
+    inBox.backgroundColor=[UIColor colorWithWhite:0 alpha:0.6];
     inBox.layer.cornerRadius=12;inBox.layer.borderWidth=1.0;
     inBox.layer.borderColor=[UIColor colorWithWhite:1 alpha:0.12].CGColor;
     [_card addSubview:inBox];
@@ -462,9 +502,12 @@ static void ZXApplyModernButton(UIButton *btn) {
     [remRow addSubview:remSw];
     
     _btn=[UIButton buttonWithType:UIButtonTypeSystem];_btn.translatesAutoresizingMaskIntoConstraints=NO;
-    [_btn setTitle:@"⚡ AUTHENTICATE & ENTER" forState:0];[_btn setTitleColor:UIColor.whiteColor forState:0];
-    _btn.titleLabel.font=[UIFont systemFontOfSize:14 weight:UIFontWeightHeavy];
-    _btn.backgroundColor=ZXRed;_btn.layer.cornerRadius=14;
+    NSMutableAttributedString *btnTitle = [[NSMutableAttributedString alloc] initWithString:@"⚡ AUTHENTICATE & ENTER"];
+    [btnTitle addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(0, btnTitle.length)];
+    [btnTitle addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:14.5 weight:UIFontWeightHeavy] range:NSMakeRange(0, btnTitle.length)];
+    [btnTitle addAttribute:NSKernAttributeName value:@1.2 range:NSMakeRange(0, btnTitle.length)];
+    [_btn setAttributedTitle:btnTitle forState:UIControlStateNormal];
+    _btn.backgroundColor=ZXRed;_btn.layer.cornerRadius=16;
     [_btn addTarget:self action:@selector(btnTouchDown) forControlEvents:UIControlEventTouchDown];
     [_btn addTarget:self action:@selector(btnTouchUp) forControlEvents:UIControlEventTouchUpInside|UIControlEventTouchUpOutside|UIControlEventTouchCancel];
     [_btn addTarget:self action:@selector(activate) forControlEvents:UIControlEventTouchUpInside];
@@ -485,14 +528,12 @@ static void ZXApplyModernButton(UIButton *btn) {
     [self.view addSubview:foot];
     
     [NSLayoutConstraint activateConstraints:@[
-        [iconBox.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [iconBox.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-185],
-        [iconBox.widthAnchor constraintEqualToConstant:50],
-        [iconBox.heightAnchor constraintEqualToConstant:50],
-        [iconLbl.centerXAnchor constraintEqualToAnchor:iconBox.centerXAnchor],
-        [iconLbl.centerYAnchor constraintEqualToAnchor:iconBox.centerYAnchor],
+        [gifView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [gifView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-185],
+        [gifView.widthAnchor constraintEqualToConstant:78],
+        [gifView.heightAnchor constraintEqualToConstant:78],
         
-        [logo.topAnchor constraintEqualToAnchor:iconBox.bottomAnchor constant:10],
+        [logo.topAnchor constraintEqualToAnchor:gifView.bottomAnchor constant:12],
         [logo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         
         [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:8],
@@ -542,8 +583,8 @@ static void ZXApplyModernButton(UIButton *btn) {
         
         [_btn.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor],
         [_btn.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor],
-        [_btn.topAnchor constraintEqualToAnchor:_card.bottomAnchor constant:14],
-        [_btn.heightAnchor constraintEqualToConstant:48],
+        [_btn.topAnchor constraintEqualToAnchor:_card.bottomAnchor constant:16],
+        [_btn.heightAnchor constraintEqualToConstant:50],
         
         [_msg.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [_msg.topAnchor constraintEqualToAnchor:_btn.bottomAnchor constant:12],
@@ -1205,28 +1246,24 @@ static void ZXApplyModernButton(UIButton *btn) {
 }
 -(void)showLoadingScreen{
     UIView*loader=[[UIView alloc]initWithFrame:self.view.bounds];
-    loader.backgroundColor=[UIColor colorWithRed:0.02 green:0.01 blue:0.02 alpha:1.0];
+    loader.backgroundColor=[UIColor blackColor];
     loader.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     ZXAddModernBackground(loader);
     
-    // Center Brand Icon
-    UIView *iconBox = [UIView new];iconBox.translatesAutoresizingMaskIntoConstraints = NO;
-    iconBox.backgroundColor = [UIColor colorWithRed:0.14 green:0.02 blue:0.05 alpha:0.9];
-    iconBox.layer.cornerRadius = 18;
-    iconBox.layer.borderWidth = 1.2;
-    iconBox.layer.borderColor = [UIColor colorWithRed:0.95 green:0.15 blue:0.3 alpha:0.7].CGColor;
-    iconBox.layer.shadowColor = ZXRed.CGColor;
-    iconBox.layer.shadowRadius = 18;
-    iconBox.layer.shadowOpacity = 0.65;
-    iconBox.layer.shadowOffset = CGSizeZero;
-    [loader addSubview:iconBox];
-    
-    UILabel *iconLbl = [UILabel new];iconLbl.translatesAutoresizingMaskIntoConstraints = NO;
-    iconLbl.text = @"B";
-    iconLbl.font = [UIFont systemFontOfSize:28 weight:UIFontWeightBlack];
-    iconLbl.textColor = UIColor.whiteColor;
-    iconLbl.textAlignment = NSTextAlignmentCenter;
-    [iconBox addSubview:iconLbl];
+    // Center Animated GIF Logo
+    UIImageView *gifView = [UIImageView new];
+    gifView.translatesAutoresizingMaskIntoConstraints = NO;
+    gifView.contentMode = UIViewContentModeScaleAspectFit;
+    gifView.layer.cornerRadius = 24;
+    gifView.layer.masksToBounds = YES;
+    gifView.layer.borderWidth = 1.2;
+    gifView.layer.borderColor = [UIColor colorWithRed:0.95 green:0.15 blue:0.3 alpha:0.6].CGColor;
+    gifView.layer.shadowColor = ZXRed.CGColor;
+    gifView.layer.shadowRadius = 16;
+    gifView.layer.shadowOpacity = 0.6;
+    gifView.layer.shadowOffset = CGSizeZero;
+    gifView.image = ZXLoadAnimatedGIF(@"GIF by Chandelier Creative.gif");
+    [loader addSubview:gifView];
     
     UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
     NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
@@ -1238,8 +1275,8 @@ static void ZXApplyModernButton(UIButton *btn) {
     [loader addSubview:logo];
     
     UIView*badge=ZXGlassView(10);badge.translatesAutoresizingMaskIntoConstraints=NO;
-    badge.backgroundColor=[UIColor colorWithRed:0.18 green:0.02 blue:0.05 alpha:0.8];
-    badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.5].CGColor;
+    badge.backgroundColor=[UIColor colorWithRed:0.14 green:0.02 blue:0.04 alpha:0.85];
+    badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.45].CGColor;
     badge.layer.borderWidth=0.8;badge.layer.cornerRadius=10;[loader addSubview:badge];
     
     UIView*dot=[UIView new];dot.translatesAutoresizingMaskIntoConstraints=NO;
@@ -1284,14 +1321,12 @@ static void ZXApplyModernButton(UIButton *btn) {
     NSLayoutConstraint*pWidth=[pBar.widthAnchor constraintEqualToConstant:20];
     
     [NSLayoutConstraint activateConstraints:@[
-        [iconBox.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [iconBox.centerYAnchor constraintEqualToAnchor:loader.centerYAnchor constant:-85],
-        [iconBox.widthAnchor constraintEqualToConstant:54],
-        [iconBox.heightAnchor constraintEqualToConstant:54],
-        [iconLbl.centerXAnchor constraintEqualToAnchor:iconBox.centerXAnchor],
-        [iconLbl.centerYAnchor constraintEqualToAnchor:iconBox.centerYAnchor],
+        [gifView.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
+        [gifView.centerYAnchor constraintEqualToAnchor:loader.centerYAnchor constant:-85],
+        [gifView.widthAnchor constraintEqualToConstant:78],
+        [gifView.heightAnchor constraintEqualToConstant:78],
         
-        [logo.topAnchor constraintEqualToAnchor:iconBox.bottomAnchor constant:12],
+        [logo.topAnchor constraintEqualToAnchor:gifView.bottomAnchor constant:12],
         [logo.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
         
         [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:10],

@@ -26,7 +26,7 @@ ZEXInjector_CFLAGS = \
     -fobjc-arc \
     -Wno-everything
 
-ZEXInjector_FRAMEWORKS = UIKit Foundation CoreFoundation Security QuartzCore AVFoundation AudioToolbox
+ZEXInjector_FRAMEWORKS = UIKit Foundation CoreFoundation Security QuartzCore AVFoundation AudioToolbox ImageIO CoreGraphics
 ZEXInjector_LIBRARIES  = z
 
 include $(THEOS_MAKE_PATH)/application.mk
