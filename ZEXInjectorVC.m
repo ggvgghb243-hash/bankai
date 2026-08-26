@@ -280,72 +280,218 @@ static UIImage* ZXFixOrientation(UIImage* src) {
 -(void)swCh:(UISwitch*)s{if(self.onToggle)self.onToggle(s.isOn);}
 @end
 
-// ── Cyber Helper for Particles & 3D HUD Rings ─────────────────────
-static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
+// ── Cyber Helper for 3D Particles, Gyroscope HUD Rings & Lasers ────
+static void ZXAddCyber3DBackground(UIView *view, CGPoint center, CGFloat radius) {
+    CAGradientLayer *bgGrad = [CAGradientLayer layer];
+    bgGrad.frame = view.bounds;
+    bgGrad.colors = @[
+        (id)[UIColor colorWithRed:0.18 green:0.01 blue:0.04 alpha:1.0].CGColor,
+        (id)[UIColor colorWithRed:0.05 green:0.005 blue:0.02 alpha:1.0].CGColor,
+        (id)[UIColor colorWithRed:0.015 green:0.01 blue:0.025 alpha:1.0].CGColor
+    ];
+    bgGrad.locations = @[@0.0, @0.45, @1.0];
+    bgGrad.startPoint = CGPointMake(0.5, 0.0);
+    bgGrad.endPoint = CGPointMake(0.5, 1.0);
+    [view.layer insertSublayer:bgGrad atIndex:0];
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(6, 6), NO, 0);
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(ctx, [UIColor colorWithRed:1.0 green:0.18 blue:0.35 alpha:0.9].CGColor);
+    CGContextFillEllipseInRect(ctx, CGRectMake(0, 0, 6, 6));
+    UIImage *dotImg = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    CAEmitterLayer *emitter = [CAEmitterLayer layer];
+    emitter.emitterPosition = CGPointMake(view.bounds.size.width / 2, view.bounds.size.height + 20);
+    emitter.emitterSize = CGSizeMake(view.bounds.size.width * 1.2, 0);
+    emitter.emitterShape = kCAEmitterLayerLine;
+    
+    CAEmitterCell *cell = [CAEmitterCell emitterCell];
+    cell.contents = (id)dotImg.CGImage;
+    cell.birthRate = 9;
+    cell.lifetime = 8.0;
+    cell.velocity = -45;
+    cell.velocityRange = 20;
+    cell.yAcceleration = -8;
+    cell.emissionRange = M_PI / 6;
+    cell.scale = 0.8;
+    cell.scaleRange = 0.5;
+    cell.alphaRange = 0.5;
+    cell.alphaSpeed = -0.1;
+    emitter.emitterCells = @[cell];
+    [view.layer insertSublayer:emitter atIndex:1];
+    
     CAShapeLayer *r1 = [CAShapeLayer layer];
     r1.frame = CGRectMake(center.x - radius, center.y - radius, radius * 2, radius * 2);
     UIBezierPath *p1 = [UIBezierPath bezierPathWithOvalInRect:r1.bounds];
     r1.path = p1.CGPath;
     r1.fillColor = UIColor.clearColor.CGColor;
-    r1.strokeColor = [UIColor colorWithRed:1.0 green:0.1 blue:0.25 alpha:0.35].CGColor;
-    r1.lineWidth = 1.5;
-    r1.lineDashPattern = @[@12, @6, @4, @6];
-    [container.layer addSublayer:r1];
+    r1.strokeColor = [UIColor colorWithRed:1.0 green:0.15 blue:0.3 alpha:0.35].CGColor;
+    r1.lineWidth = 1.6;
+    r1.lineDashPattern = @[@14, @8, @4, @8];
+    r1.shadowColor = [UIColor colorWithRed:1.0 green:0.1 blue:0.25 alpha:1.0].CGColor;
+    r1.shadowRadius = 8;
+    r1.shadowOpacity = 0.7;
+    r1.shadowOffset = CGSizeZero;
+    [view.layer insertSublayer:r1 atIndex:2];
     
     CABasicAnimation *rot1 = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
     rot1.toValue = @(M_PI * 2);
-    rot1.duration = 14;
+    rot1.duration = 18;
     rot1.repeatCount = HUGE_VALF;
-    [r1 addAnimation:rot1 forKey:@"r1"];
+    [r1 addAnimation:rot1 forKey:@"r1_rot"];
     
-    CGFloat r2_rad = radius * 0.72;
+    CGFloat r2_rad = radius * 0.74;
     CAShapeLayer *r2 = [CAShapeLayer layer];
     r2.frame = CGRectMake(center.x - r2_rad, center.y - r2_rad, r2_rad * 2, r2_rad * 2);
     UIBezierPath *p2 = [UIBezierPath bezierPathWithOvalInRect:r2.bounds];
     r2.path = p2.CGPath;
     r2.fillColor = UIColor.clearColor.CGColor;
-    r2.strokeColor = [UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.22].CGColor;
+    r2.strokeColor = [UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:0.25].CGColor;
     r2.lineWidth = 1.0;
-    r2.lineDashPattern = @[@20, @10, @8, @10];
-    [container.layer addSublayer:r2];
+    r2.lineDashPattern = @[@24, @12, @10, @12];
+    [view.layer insertSublayer:r2 atIndex:2];
     
     CABasicAnimation *rot2 = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
     rot2.toValue = @(-M_PI * 2);
-    rot2.duration = 10;
+    rot2.duration = 12;
     rot2.repeatCount = HUGE_VALF;
-    [r2 addAnimation:rot2 forKey:@"r2"];
+    [r2 addAnimation:rot2 forKey:@"r2_rot"];
+    
+    CGFloat r3_rad = radius * 0.45;
+    CAShapeLayer *r3 = [CAShapeLayer layer];
+    r3.frame = CGRectMake(center.x - r3_rad, center.y - r3_rad, r3_rad * 2, r3_rad * 2);
+    UIBezierPath *p3 = [UIBezierPath bezierPathWithOvalInRect:r3.bounds];
+    r3.path = p3.CGPath;
+    r3.fillColor = [UIColor colorWithRed:1.0 green:0.05 blue:0.2 alpha:0.04].CGColor;
+    r3.strokeColor = [UIColor colorWithRed:1.0 green:0.2 blue:0.4 alpha:0.4].CGColor;
+    r3.lineWidth = 1.2;
+    [view.layer insertSublayer:r3 atIndex:2];
+    
+    CABasicAnimation *pulse = [CABasicAnimation animationWithKeyPath:@"transform.scale"];
+    pulse.fromValue = @(0.92);
+    pulse.toValue = @(1.08);
+    pulse.duration = 2.2;
+    pulse.autoreverses = YES;
+    pulse.repeatCount = HUGE_VALF;
+    pulse.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    [r3 addAnimation:pulse forKey:@"r3_pulse"];
+    
+    CAGradientLayer *laser = [CAGradientLayer layer];
+    laser.frame = CGRectMake(0, 0, view.bounds.size.width, 2.0);
+    laser.colors = @[
+        (id)[UIColor clearColor].CGColor,
+        (id)[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.4].CGColor,
+        (id)[UIColor colorWithRed:1.0 green:0.8 blue:0.9 alpha:0.8].CGColor,
+        (id)[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.4].CGColor,
+        (id)[UIColor clearColor].CGColor
+    ];
+    laser.locations = @[@0.0, @0.25, @0.5, @0.75, @1.0];
+    laser.startPoint = CGPointMake(0, 0.5);
+    laser.endPoint = CGPointMake(1, 0.5);
+    [view.layer insertSublayer:laser atIndex:3];
+    
+    CABasicAnimation *scanAnim = [CABasicAnimation animationWithKeyPath:@"position.y"];
+    scanAnim.fromValue = @(0);
+    scanAnim.toValue = @(view.bounds.size.height);
+    scanAnim.duration = 4.5;
+    scanAnim.autoreverses = YES;
+    scanAnim.repeatCount = HUGE_VALF;
+    scanAnim.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    [laser addAnimation:scanAnim forKey:@"laser_scan"];
+}
+
+static void ZXApply3DButtonAnimation(UIButton *btn) {
+    btn.layer.cornerRadius = 15;
+    btn.layer.shadowColor = ZXRed.CGColor;
+    btn.layer.shadowOffset = CGSizeMake(0, 6);
+    btn.layer.shadowRadius = 14;
+    btn.layer.shadowOpacity = 0.85;
+    
+    CAGradientLayer *btnGrad = [CAGradientLayer layer];
+    btnGrad.frame = CGRectMake(0, 0, 400, 52);
+    btnGrad.colors = @[
+        (id)[UIColor colorWithRed:1.0 green:0.12 blue:0.32 alpha:1.0].CGColor,
+        (id)[UIColor colorWithRed:0.75 green:0.02 blue:0.18 alpha:1.0].CGColor
+    ];
+    btnGrad.startPoint = CGPointMake(0, 0);
+    btnGrad.endPoint = CGPointMake(1, 1);
+    btnGrad.cornerRadius = 15;
+    [btn.layer insertSublayer:btnGrad atIndex:0];
+    
+    CAGradientLayer *shimmer = [CAGradientLayer layer];
+    shimmer.frame = CGRectMake(-150, 0, 100, 52);
+    shimmer.colors = @[(id)[UIColor clearColor].CGColor, (id)[UIColor colorWithWhite:1 alpha:0.35].CGColor, (id)[UIColor clearColor].CGColor];
+    shimmer.startPoint = CGPointMake(0, 0.5);
+    shimmer.endPoint = CGPointMake(1, 0.5);
+    [btn.layer addSublayer:shimmer];
+    
+    CABasicAnimation *shimAnim = [CABasicAnimation animationWithKeyPath:@"position.x"];
+    shimAnim.fromValue = @(-100);
+    shimAnim.toValue = @(500);
+    shimAnim.duration = 3.0;
+    shimAnim.repeatCount = HUGE_VALF;
+    [shimmer addAnimation:shimAnim forKey:@"shim"];
+}
+
+static void ZXApply3DFloatingMotion(UIView *card) {
+    CATransform3D t = CATransform3DIdentity;
+    t.m34 = -1.0 / 650.0;
+    card.layer.transform = t;
+    
+    CAKeyframeAnimation *tilt = [CAKeyframeAnimation animationWithKeyPath:@"transform.rotation.y"];
+    tilt.values = @[@(-0.035), @(0.035), @(-0.035)];
+    tilt.duration = 6.0;
+    tilt.repeatCount = HUGE_VALF;
+    tilt.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    [card.layer addAnimation:tilt forKey:@"card_3d_y"];
+    
+    CAKeyframeAnimation *tiltX = [CAKeyframeAnimation animationWithKeyPath:@"transform.rotation.x"];
+    tiltX.values = @[@(0.02), @(-0.02), @(0.02)];
+    tiltX.duration = 5.0;
+    tiltX.repeatCount = HUGE_VALF;
+    tiltX.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    [card.layer addAnimation:tiltX forKey:@"card_3d_x"];
+}
+
+static void ZXApplyLogoGlow(UILabel *logo) {
+    CABasicAnimation *glow = [CABasicAnimation animationWithKeyPath:@"layer.shadowRadius"];
+    glow.fromValue = @(14);
+    glow.toValue = @(28);
+    glow.duration = 1.8;
+    glow.autoreverses = YES;
+    glow.repeatCount = HUGE_VALF;
+    glow.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    [logo.layer addAnimation:glow forKey:@"logo_glow"];
+    
+    CABasicAnimation *scale = [CABasicAnimation animationWithKeyPath:@"transform.scale"];
+    scale.fromValue = @(1.0);
+    scale.toValue = @(1.035);
+    scale.duration = 1.8;
+    scale.autoreverses = YES;
+    scale.repeatCount = HUGE_VALF;
+    scale.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    [logo.layer addAnimation:scale forKey:@"logo_scale"];
 }
 
 // ── ZXAuthVC ──────────────────────────────────────────────────────
 @interface ZXAuthVC : UIViewController
 @property (copy) void(^onAuth)(void);
 @end
-@implementation ZXAuthVC{UITextField*_f;UILabel*_msg;UIButton*_btn;UIActivityIndicatorView*_sp;}
+@implementation ZXAuthVC{
+    UITextField*_f;
+    UILabel*_msg;
+    UIButton*_btn;
+    UIActivityIndicatorView*_sp;
+    UIView*_card;
+}
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
 -(void)viewDidLoad{
-    [super viewDidLoad];self.view.backgroundColor=[UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:1.0];
+    [super viewDidLoad];
+    self.view.backgroundColor=[UIColor colorWithRed:0.03 green:0.01 blue:0.02 alpha:1.0];
     
-    CAGradientLayer*g=[CAGradientLayer layer];g.frame=self.view.bounds;
-    g.colors=@[(id)[UIColor colorWithRed:.20 green:.01 blue:.04 alpha:1].CGColor,(id)[UIColor colorWithRed:.03 green:.01 blue:.02 alpha:1].CGColor];
-    g.locations=@[@0,@.6];[self.view.layer insertSublayer:g atIndex:0];
-    
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(4,4),NO,0);
-    CGContextSetFillColorWithColor(UIGraphicsGetCurrentContext(),[UIColor colorWithRed:1.0 green:0.15 blue:0.3 alpha:0.9].CGColor);
-    CGContextFillEllipseInRect(UIGraphicsGetCurrentContext(),CGRectMake(0,0,4,4));
-    UIImage*dot=UIGraphicsGetImageFromCurrentImageContext();UIGraphicsEndImageContext();
-    
-    CAEmitterLayer*el=[CAEmitterLayer layer];
-    el.emitterPosition=CGPointMake(UIScreen.mainScreen.bounds.size.width/2,-10);
-    el.emitterSize=CGSizeMake(UIScreen.mainScreen.bounds.size.width,0);
-    el.emitterShape=kCAEmitterLayerLine;
-    CAEmitterCell*ec=[CAEmitterCell emitterCell];
-    ec.contents=(id)dot.CGImage;ec.birthRate=7;ec.lifetime=7;
-    ec.velocity=32;ec.velocityRange=14;ec.emissionRange=M_PI/8;
-    ec.scale=1.1;ec.scaleRange=.5;ec.alphaRange=.4;ec.alphaSpeed=-.05;
-    el.emitterCells=@[ec];[self.view.layer addSublayer:el];
-    
-    CGPoint centerPt = CGPointMake(UIScreen.mainScreen.bounds.size.width/2, UIScreen.mainScreen.bounds.size.height/2 - 130);
-    ZXAddCyberRings(self.view, centerPt, 110);
+    CGPoint centerPt = CGPointMake(UIScreen.mainScreen.bounds.size.width/2, UIScreen.mainScreen.bounds.size.height/2 - 140);
+    ZXAddCyber3DBackground(self.view, centerPt, 120);
     
     UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
     NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
@@ -355,68 +501,72 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     [as addAttribute:NSKernAttributeName value:@2.5 range:NSMakeRange(0,15)];
     logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
     logo.layer.shadowColor=ZXRed.CGColor;logo.layer.shadowOffset=CGSizeZero;
-    logo.layer.shadowRadius=18;logo.layer.shadowOpacity=0.9;
+    logo.layer.shadowRadius=20;logo.layer.shadowOpacity=0.95;
     [self.view addSubview:logo];
+    ZXApplyLogoGlow(logo);
     
-    UIView*badge=[UIView new];badge.translatesAutoresizingMaskIntoConstraints=NO;
-    badge.backgroundColor=[UIColor colorWithRed:0.25 green:0.02 blue:0.06 alpha:0.8];
-    badge.layer.cornerRadius=10;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.6].CGColor;
+    UIView*badge=ZXGlassView(11);badge.translatesAutoresizingMaskIntoConstraints=NO;
+    badge.backgroundColor=[UIColor colorWithRed:0.25 green:0.02 blue:0.06 alpha:0.85];
+    badge.layer.cornerRadius=11;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.38 alpha:0.7].CGColor;
     badge.layer.borderWidth=0.8;[self.view addSubview:badge];
     UILabel*badgeLbl=[UILabel new];badgeLbl.translatesAutoresizingMaskIntoConstraints=NO;
     badgeLbl.text=@"🔒 SECURITY CLEARANCE REQUIRED";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
-    badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.35 blue:0.5 alpha:1.0];[badge addSubview:badgeLbl];
+    badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.38 blue:0.55 alpha:1.0];[badge addSubview:badgeLbl];
     
     UILabel*devInfo=[UILabel new];devInfo.translatesAutoresizingMaskIntoConstraints=NO;
     NSString *model = [UIDevice currentDevice].model;
     NSString *osVer = [UIDevice currentDevice].systemVersion;
     devInfo.text=[NSString stringWithFormat:@"📱 DEVICE: %@ • iOS %@", model.uppercaseString, osVer];
-    devInfo.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
-    devInfo.textColor=[UIColor colorWithRed:0.2 green:0.84 blue:0.4 alpha:0.9];
+    devInfo.font=[UIFont monospacedSystemFontOfSize:9.5 weight:UIFontWeightBold];
+    devInfo.textColor=[UIColor colorWithRed:0.2 green:0.88 blue:0.45 alpha:0.95];
     devInfo.textAlignment=NSTextAlignmentCenter;
     [self.view addSubview:devInfo];
     
-    UIView*card=ZXGlassView(18);card.translatesAutoresizingMaskIntoConstraints=NO;
-    card.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.38 alpha:0.8].CGColor;
-    card.layer.borderWidth=1.2;
-    card.layer.shadowColor=[UIColor colorWithRed:1.0 green:0.1 blue:0.3 alpha:1.0].CGColor;
-    card.layer.shadowOffset=CGSizeZero;card.layer.shadowRadius=15;card.layer.shadowOpacity=0.85;
-    card.backgroundColor=[UIColor colorWithRed:0.10 green:0.015 blue:0.04 alpha:0.9];
-    [self.view addSubview:card];
+    _card = [UIView new];_card.translatesAutoresizingMaskIntoConstraints=NO;
+    _card.backgroundColor = [UIColor colorWithRed:0.09 green:0.015 blue:0.035 alpha:0.92];
+    _card.layer.cornerRadius = 20;
+    _card.layer.masksToBounds = NO;
+    _card.layer.borderColor = [UIColor colorWithRed:1.0 green:0.2 blue:0.4 alpha:0.85].CGColor;
+    _card.layer.borderWidth = 1.2;
+    _card.layer.shadowColor = [UIColor colorWithRed:1.0 green:0.05 blue:0.25 alpha:1.0].CGColor;
+    _card.layer.shadowOffset = CGSizeMake(0, 16);
+    _card.layer.shadowRadius = 26;
+    _card.layer.shadowOpacity = 0.85;
+    [self.view addSubview:_card];
+    ZXApply3DFloatingMotion(_card);
     
-    dispatch_async(dispatch_get_main_queue(),^{
-        CAGradientLayer*sw=[CAGradientLayer layer];sw.frame=CGRectMake(0,0,200,1.5);
-        sw.colors=@[(id)[UIColor clearColor].CGColor,(id)ZXRed.CGColor,(id)[UIColor clearColor].CGColor];
-        sw.startPoint=CGPointMake(0,.5);sw.endPoint=CGPointMake(1,.5);
-        [card.layer addSublayer:sw];
-        CABasicAnimation*a=[CABasicAnimation animationWithKeyPath:@"position.x"];
-        a.fromValue=@(-100);a.toValue=@(UIScreen.mainScreen.bounds.size.width+100);
-        a.duration=3.5;a.repeatCount=HUGE_VALF;[sw addAnimation:a forKey:@"s"];
-    });
+    CAGradientLayer*sw=[CAGradientLayer layer];sw.frame=CGRectMake(0,0,260,1.8);
+    sw.colors=@[(id)[UIColor clearColor].CGColor,(id)[UIColor colorWithRed:1 green:0.3 blue:0.5 alpha:1].CGColor,(id)[UIColor whiteColor].CGColor,(id)[UIColor colorWithRed:1 green:0.3 blue:0.5 alpha:1].CGColor,(id)[UIColor clearColor].CGColor];
+    sw.startPoint=CGPointMake(0,.5);sw.endPoint=CGPointMake(1,.5);
+    [_card.layer addSublayer:sw];
+    CABasicAnimation*a=[CABasicAnimation animationWithKeyPath:@"position.x"];
+    a.fromValue=@(-120);a.toValue=@(UIScreen.mainScreen.bounds.size.width+120);
+    a.duration=3.2;a.repeatCount=HUGE_VALF;[sw addAnimation:a forKey:@"card_shimmer"];
     
     UILabel*lbl=[UILabel new];lbl.translatesAutoresizingMaskIntoConstraints=NO;
-    lbl.text=@"ENTER LICENSE KEY";lbl.font=[UIFont monospacedSystemFontOfSize:10 weight:UIFontWeightBold];
-    lbl.textColor=[UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:0.9];[card addSubview:lbl];
+    lbl.text=@"ENTER LICENSE KEY";lbl.font=[UIFont monospacedSystemFontOfSize:10.5 weight:UIFontWeightBold];
+    lbl.textColor=[UIColor colorWithRed:1.0 green:0.35 blue:0.5 alpha:1.0];[_card addSubview:lbl];
     
     NSString *hwid = ZXGetHWID();
     UILabel*hwidLbl=[UILabel new];hwidLbl.translatesAutoresizingMaskIntoConstraints=NO;
     hwidLbl.text=[NSString stringWithFormat:@"HWID: %@...", [hwid substringToIndex:MIN(10, hwid.length)].uppercaseString];
     hwidLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
-    hwidLbl.textColor=[UIColor colorWithWhite:1 alpha:0.35];[card addSubview:hwidLbl];
+    hwidLbl.textColor=[UIColor colorWithWhite:1 alpha:0.4];[_card addSubview:hwidLbl];
     
     UIView*inBox=[UIView new];inBox.translatesAutoresizingMaskIntoConstraints=NO;
-    inBox.backgroundColor=[UIColor colorWithWhite:0 alpha:0.5];
-    inBox.layer.cornerRadius=10;inBox.layer.borderWidth=0.8;
-    inBox.layer.borderColor=[UIColor colorWithWhite:1 alpha:0.1].CGColor;
-    [card addSubview:inBox];
+    inBox.backgroundColor=[UIColor colorWithWhite:0 alpha:0.65];
+    inBox.layer.cornerRadius=12;inBox.layer.borderWidth=1.0;
+    inBox.layer.borderColor=[UIColor colorWithWhite:1 alpha:0.14].CGColor;
+    [_card addSubview:inBox];
     
     _f=[UITextField new];_f.translatesAutoresizingMaskIntoConstraints=NO;
     _f.textColor=UIColor.whiteColor;_f.textAlignment=NSTextAlignmentCenter;
-    _f.font=[UIFont monospacedSystemFontOfSize:14 weight:UIFontWeightBold];
+    _f.font=[UIFont monospacedSystemFontOfSize:14.5 weight:UIFontWeightBold];
     _f.autocorrectionType=UITextAutocorrectionTypeNo;
     _f.autocapitalizationType=UITextAutocapitalizationTypeAllCharacters;
     _f.keyboardAppearance=UIKeyboardAppearanceDark;
     _f.attributedPlaceholder=[[NSAttributedString alloc]initWithString:@"BANKAI-XXXX-XXXX-XXXX"
-        attributes:@{NSForegroundColorAttributeName:[UIColor colorWithWhite:.35 alpha:1],
+        attributes:@{NSForegroundColorAttributeName:[UIColor colorWithWhite:.38 alpha:1],
                      NSFontAttributeName:[UIFont monospacedSystemFontOfSize:13 weight:UIFontWeightMedium]}];
     
     NSString *savedKey = [[NSUserDefaults standardUserDefaults] stringForKey:kSavedKey];
@@ -426,24 +576,26 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     [inBox addSubview:_f];
     
     UIButton*pasteBtn=[UIButton buttonWithType:UIButtonTypeSystem];pasteBtn.translatesAutoresizingMaskIntoConstraints=NO;
-    [pasteBtn setTitle:@"PASTE" forState:0];[pasteBtn setTitleColor:[UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:0.8] forState:0];
-    pasteBtn.titleLabel.font=[UIFont monospacedSystemFontOfSize:10 weight:UIFontWeightBold];
+    [pasteBtn setTitle:@"PASTE" forState:0];
+    [pasteBtn setTitleColor:[UIColor colorWithRed:1.0 green:0.35 blue:0.5 alpha:1.0] forState:0];
+    pasteBtn.titleLabel.font=[UIFont monospacedSystemFontOfSize:10.5 weight:UIFontWeightBold];
+    pasteBtn.backgroundColor=[UIColor colorWithRed:1.0 green:0.1 blue:0.25 alpha:0.15];
+    pasteBtn.layer.cornerRadius=8;
     [pasteBtn addTarget:self action:@selector(pasteKey) forControlEvents:UIControlEventTouchUpInside];
     [inBox addSubview:pasteBtn];
     
-    // Remember Key row
     UIView*remRow=[UIView new];remRow.translatesAutoresizingMaskIntoConstraints=NO;
-    [card addSubview:remRow];
+    [_card addSubview:remRow];
     
     UILabel*remLbl=[UILabel new];remLbl.translatesAutoresizingMaskIntoConstraints=NO;
     remLbl.text=@"💾 REMEMBER KEY ON DEVICE";
-    remLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
-    remLbl.textColor=[UIColor colorWithWhite:1 alpha:0.65];
+    remLbl.font=[UIFont monospacedSystemFontOfSize:9.5 weight:UIFontWeightBold];
+    remLbl.textColor=[UIColor colorWithWhite:1 alpha:0.75];
     [remRow addSubview:remLbl];
     
     UISwitch*remSw=[UISwitch new];remSw.translatesAutoresizingMaskIntoConstraints=NO;
     remSw.onTintColor=ZXRed;
-    remSw.transform=CGAffineTransformMakeScale(0.75, 0.75);
+    remSw.transform=CGAffineTransformMakeScale(0.78, 0.78);
     BOOL shouldRem = [[NSUserDefaults standardUserDefaults] objectForKey:kSaveKeyToggle] ? [[NSUserDefaults standardUserDefaults] boolForKey:kSaveKeyToggle] : YES;
     [remSw setOn:shouldRem animated:NO];
     remSw.tag = 888;
@@ -451,82 +603,87 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     
     _btn=[UIButton buttonWithType:UIButtonTypeSystem];_btn.translatesAutoresizingMaskIntoConstraints=NO;
     [_btn setTitle:@"⚡ INITIATE ACCESS" forState:0];[_btn setTitleColor:UIColor.whiteColor forState:0];
-    _btn.titleLabel.font=[UIFont systemFontOfSize:14 weight:UIFontWeightHeavy];
-    _btn.backgroundColor=ZXRed;_btn.layer.cornerRadius=14;
+    _btn.titleLabel.font=[UIFont systemFontOfSize:14.5 weight:UIFontWeightHeavy];
+    _btn.backgroundColor=ZXRed;_btn.layer.cornerRadius=15;
     _btn.layer.shadowColor=ZXRed.CGColor;
-    _btn.layer.shadowOffset=CGSizeZero;_btn.layer.shadowRadius=14;_btn.layer.shadowOpacity=0.9;
+    _btn.layer.shadowOffset=CGSizeMake(0, 6);_btn.layer.shadowRadius=16;_btn.layer.shadowOpacity=0.9;
+    [_btn addTarget:self action:@selector(btnTouchDown) forControlEvents:UIControlEventTouchDown];
+    [_btn addTarget:self action:@selector(btnTouchUp) forControlEvents:UIControlEventTouchUpInside|UIControlEventTouchUpOutside|UIControlEventTouchCancel];
     [_btn addTarget:self action:@selector(activate) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_btn];
+    ZXApply3DButtonAnimation(_btn);
     
     _msg=[UILabel new];_msg.translatesAutoresizingMaskIntoConstraints=NO;
-    _msg.textAlignment=NSTextAlignmentCenter;_msg.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightMedium];
+    _msg.textAlignment=NSTextAlignmentCenter;_msg.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
     _msg.numberOfLines=2;[self.view addSubview:_msg];
     
     _sp=[[UIActivityIndicatorView alloc]initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
     _sp.translatesAutoresizingMaskIntoConstraints=NO;_sp.color=ZXRed;_sp.hidesWhenStopped=YES;[self.view addSubview:_sp];
     
     UILabel*foot=[UILabel new];foot.translatesAutoresizingMaskIntoConstraints=NO;
-    foot.text=@"STATUS: ENCRYPTED • TLS-AES256 • 1-DEVICE LOCK";
-    foot.font=[UIFont monospacedSystemFontOfSize:8 weight:UIFontWeightMedium];
-    foot.textColor=[UIColor colorWithWhite:1 alpha:0.2];foot.textAlignment=NSTextAlignmentCenter;
+    foot.text=@"STATUS: ENCRYPTED • TLS-AES256 • 1-DEVICE SECURE";
+    foot.font=[UIFont monospacedSystemFontOfSize:8 weight:UIFontWeightBold];
+    foot.textColor=[UIColor colorWithWhite:1 alpha:0.25];foot.textAlignment=NSTextAlignmentCenter;
     [self.view addSubview:foot];
     
     [NSLayoutConstraint activateConstraints:@[
         [logo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [logo.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-135],
-        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:8],
+        [logo.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-140],
+        
+        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:10],
         [badge.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
         [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
-        [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
-        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
+        [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:12],
+        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-12],
         
         [devInfo.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:8],
         [devInfo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         
-        [card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:20],
-        [card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-20],
-        [card.topAnchor constraintEqualToAnchor:devInfo.bottomAnchor constant:14],
+        [_card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:20],
+        [_card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-20],
+        [_card.topAnchor constraintEqualToAnchor:devInfo.bottomAnchor constant:14],
         
-        [lbl.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
-        [lbl.topAnchor constraintEqualToAnchor:card.topAnchor constant:14],
-        [hwidLbl.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
+        [lbl.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:16],
+        [lbl.topAnchor constraintEqualToAnchor:_card.topAnchor constant:15],
+        [hwidLbl.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor constant:-16],
         [hwidLbl.centerYAnchor constraintEqualToAnchor:lbl.centerYAnchor],
         
-        [inBox.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:12],
-        [inBox.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-12],
-        [inBox.topAnchor constraintEqualToAnchor:lbl.bottomAnchor constant:10],
-        [inBox.heightAnchor constraintEqualToConstant:46],
+        [inBox.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:12],
+        [inBox.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor constant:-12],
+        [inBox.topAnchor constraintEqualToAnchor:lbl.bottomAnchor constant:12],
+        [inBox.heightAnchor constraintEqualToConstant:48],
         
         [_f.leadingAnchor constraintEqualToAnchor:inBox.leadingAnchor constant:10],
         [_f.trailingAnchor constraintEqualToAnchor:pasteBtn.leadingAnchor constant:-6],
         [_f.topAnchor constraintEqualToAnchor:inBox.topAnchor],
         [_f.bottomAnchor constraintEqualToAnchor:inBox.bottomAnchor],
         
-        [pasteBtn.trailingAnchor constraintEqualToAnchor:inBox.trailingAnchor constant:-10],
+        [pasteBtn.trailingAnchor constraintEqualToAnchor:inBox.trailingAnchor constant:-8],
         [pasteBtn.centerYAnchor constraintEqualToAnchor:inBox.centerYAnchor],
-        [pasteBtn.widthAnchor constraintEqualToConstant:50],
+        [pasteBtn.widthAnchor constraintEqualToConstant:56],
+        [pasteBtn.heightAnchor constraintEqualToConstant:32],
         
-        [remRow.topAnchor constraintEqualToAnchor:inBox.bottomAnchor constant:8],
-        [remRow.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:14],
-        [remRow.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-14],
-        [remRow.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-10],
-        [remRow.heightAnchor constraintEqualToConstant:32],
+        [remRow.topAnchor constraintEqualToAnchor:inBox.bottomAnchor constant:10],
+        [remRow.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:14],
+        [remRow.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor constant:-14],
+        [remRow.bottomAnchor constraintEqualToAnchor:_card.bottomAnchor constant:-12],
+        [remRow.heightAnchor constraintEqualToConstant:34],
         
         [remLbl.leadingAnchor constraintEqualToAnchor:remRow.leadingAnchor],
         [remLbl.centerYAnchor constraintEqualToAnchor:remRow.centerYAnchor],
         [remSw.trailingAnchor constraintEqualToAnchor:remRow.trailingAnchor],
         [remSw.centerYAnchor constraintEqualToAnchor:remRow.centerYAnchor],
         
-        [_btn.leadingAnchor constraintEqualToAnchor:card.leadingAnchor],
-        [_btn.trailingAnchor constraintEqualToAnchor:card.trailingAnchor],
-        [_btn.topAnchor constraintEqualToAnchor:card.bottomAnchor constant:14],
-        [_btn.heightAnchor constraintEqualToConstant:50],
+        [_btn.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor],
+        [_btn.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor],
+        [_btn.topAnchor constraintEqualToAnchor:_card.bottomAnchor constant:16],
+        [_btn.heightAnchor constraintEqualToConstant:52],
         
         [_msg.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [_msg.topAnchor constraintEqualToAnchor:_btn.bottomAnchor constant:12],
-        [_msg.leadingAnchor constraintEqualToAnchor:card.leadingAnchor],
-        [_msg.trailingAnchor constraintEqualToAnchor:card.trailingAnchor],
+        [_msg.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor],
+        [_msg.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor],
         
         [_sp.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [_sp.topAnchor constraintEqualToAnchor:_msg.bottomAnchor constant:6],
@@ -534,6 +691,25 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
         [foot.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [foot.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-10],
     ]];
+}
+-(void)btnTouchDown{
+    [UIView animateWithDuration:0.15 animations:^{
+        self->_btn.transform = CGAffineTransformMakeScale(0.96, 0.96);
+    }];
+}
+-(void)btnTouchUp{
+    [UIView animateWithDuration:0.25 delay:0 usingSpringWithDamping:0.6 initialSpringVelocity:0.5 options:0 animations:^{
+        self->_btn.transform = CGAffineTransformIdentity;
+    } completion:nil];
+}
+-(void)shakeCard{
+    AudioServicesPlaySystemSound(1521);
+    CAKeyframeAnimation *shake = [CAKeyframeAnimation animationWithKeyPath:@"position.x"];
+    shake.values = @[@(0), @(-12), @(12), @(-8), @(8), @(-4), @(4), @(0)];
+    shake.keyTimes = @[@0, @0.15, @0.3, @0.45, @0.6, @0.75, @0.9, @1];
+    shake.duration = 0.45;
+    shake.additive = YES;
+    [_card.layer addAnimation:shake forKey:@"card_shake"];
 }
 -(void)pasteKey{
     NSString*pb=[UIPasteboard generalPasteboard].string;
@@ -543,7 +719,10 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
 }
 -(void)activate{
     NSString*key=[_f.text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet].uppercaseString;
-    if(!key.length){_msg.text=@"> Error: Enter license key";_msg.textColor=[UIColor systemYellowColor];return;}
+    if(!key.length){
+        [self shakeCard];
+        _msg.text=@"> Error: Enter license key";_msg.textColor=[UIColor systemYellowColor];return;
+    }
     
     UISwitch*remSw = (UISwitch*)[self.view viewWithTag:888];
     BOOL isRemember = remSw ? remSw.isOn : YES;
@@ -571,7 +750,10 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     [[[NSURLSession sharedSession]dataTaskWithURL:[NSURL URLWithString:url] completionHandler:^(NSData*d,NSURLResponse*r,NSError*e){
         dispatch_async(dispatch_get_main_queue(),^{
             [self->_sp stopAnimating];self->_btn.enabled=YES;
-            if(!d||e){self->_msg.text=@"> Server connection failed";self->_msg.textColor=UIColor.systemRedColor;return;}
+            if(!d||e){
+                [self shakeCard];
+                self->_msg.text=@"> Server connection failed";self->_msg.textColor=UIColor.systemRedColor;return;
+            }
             NSDictionary*j=[NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
             if([j[@"valid"]boolValue]){
                 if(isRemember) {
@@ -588,6 +770,7 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
                 self->_msg.text=@"> Access Granted: Verified!";self->_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW,600*NSEC_PER_MSEC),dispatch_get_main_queue(),^{if(self.onAuth)self.onAuth();});
             } else {
+                [self shakeCard];
                 NSString *reason = j[@"reason"] ?: @"Invalid or expired key";
                 self->_msg.text=[NSString stringWithFormat:@"> Access Denied: %@", reason];self->_msg.textColor=UIColor.systemRedColor;
             }
@@ -1157,15 +1340,11 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
 }
 -(void)showLoadingScreen{
     UIView*loader=[[UIView alloc]initWithFrame:self.view.bounds];
-    loader.backgroundColor=[UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:1.0];
+    loader.backgroundColor=[UIColor colorWithRed:0.03 green:0.01 blue:0.02 alpha:1.0];
     loader.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     
-    CAGradientLayer*g=[CAGradientLayer layer];g.frame=loader.bounds;
-    g.colors=@[(id)[UIColor colorWithRed:.20 green:.01 blue:.04 alpha:1].CGColor,(id)[UIColor colorWithRed:.03 green:.01 blue:.02 alpha:1].CGColor];
-    g.locations=@[@0,@.7];[loader.layer insertSublayer:g atIndex:0];
-    
-    CGPoint centerPt = CGPointMake(UIScreen.mainScreen.bounds.size.width/2, UIScreen.mainScreen.bounds.size.height/2 - 50);
-    ZXAddCyberRings(loader, centerPt, 95);
+    CGPoint centerPt = CGPointMake(UIScreen.mainScreen.bounds.size.width/2, UIScreen.mainScreen.bounds.size.height/2 - 60);
+    ZXAddCyber3DBackground(loader, centerPt, 110);
     
     UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
     NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
@@ -1175,60 +1354,88 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     [as addAttribute:NSKernAttributeName value:@2.5 range:NSMakeRange(0,15)];
     logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
     logo.layer.shadowColor=ZXRed.CGColor;logo.layer.shadowOffset=CGSizeZero;
-    logo.layer.shadowRadius=18;logo.layer.shadowOpacity=0.9;
+    logo.layer.shadowRadius=20;logo.layer.shadowOpacity=0.95;
     [loader addSubview:logo];
+    ZXApplyLogoGlow(logo);
     
-    UIView*badge=[UIView new];badge.translatesAutoresizingMaskIntoConstraints=NO;
-    badge.backgroundColor=[UIColor colorWithRed:0.25 green:0.02 blue:0.06 alpha:0.8];
-    badge.layer.cornerRadius=10;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.6].CGColor;
+    UIView*badge=ZXGlassView(12);badge.translatesAutoresizingMaskIntoConstraints=NO;
+    badge.backgroundColor=[UIColor colorWithRed:0.22 green:0.02 blue:0.06 alpha:0.85];
+    badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.7].CGColor;
     badge.layer.borderWidth=0.8;[loader addSubview:badge];
+    
+    UIView*dot=[UIView new];dot.translatesAutoresizingMaskIntoConstraints=NO;
+    dot.backgroundColor=[UIColor colorWithRed:0.2 green:0.9 blue:0.4 alpha:1.0];
+    dot.layer.cornerRadius=3.5;dot.layer.shadowColor=UIColor.greenColor.CGColor;
+    dot.layer.shadowRadius=6;dot.layer.shadowOpacity=1.0;dot.layer.shadowOffset=CGSizeZero;
+    [badge addSubview:dot];
+    
+    CABasicAnimation*dotPulse=[CABasicAnimation animationWithKeyPath:@"transform.scale"];
+    dotPulse.fromValue=@(0.8);dotPulse.toValue=@(1.4);dotPulse.duration=0.8;
+    dotPulse.autoreverses=YES;dotPulse.repeatCount=HUGE_VALF;
+    [dot.layer addAnimation:dotPulse forKey:@"dot_p"];
+    
     UILabel*badgeLbl=[UILabel new];badgeLbl.translatesAutoresizingMaskIntoConstraints=NO;
-    badgeLbl.text=@"⚡ KERNEL BYPASS ENGINE";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
-    badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:1.0];[badge addSubview:badgeLbl];
+    badgeLbl.text=@"KERNEL BYPASS ACTIVE";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
+    badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.4 blue:0.55 alpha:1.0];[badge addSubview:badgeLbl];
     
     UILabel*devLoad=[UILabel new];devLoad.translatesAutoresizingMaskIntoConstraints=NO;
     NSString *model = [UIDevice currentDevice].model;
     NSString *osVer = [UIDevice currentDevice].systemVersion;
-    devLoad.text=[NSString stringWithFormat:@"📱 %@ • iOS %@", model.uppercaseString, osVer];
-    devLoad.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
-    devLoad.textColor=[UIColor colorWithRed:0.2 green:0.84 blue:0.4 alpha:0.9];
+    devLoad.text=[NSString stringWithFormat:@"📱 %@ • iOS %@ • ROOTLESS", model.uppercaseString, osVer];
+    devLoad.font=[UIFont monospacedSystemFontOfSize:9.5 weight:UIFontWeightBold];
+    devLoad.textColor=[UIColor colorWithRed:0.25 green:0.88 blue:0.45 alpha:0.95];
     devLoad.textAlignment=NSTextAlignmentCenter;[loader addSubview:devLoad];
     
     UILabel*sub=[UILabel new];sub.translatesAutoresizingMaskIntoConstraints=NO;
-    sub.text=@"> INITIALIZING ENGINE...";
-    sub.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
-    sub.textColor=[UIColor colorWithWhite:1 alpha:.7];sub.textAlignment=NSTextAlignmentCenter;[loader addSubview:sub];
+    sub.text=@"> [01/04] INITIALIZING SYSTEM KERNEL...";
+    sub.font=[UIFont monospacedSystemFontOfSize:10.5 weight:UIFontWeightBold];
+    sub.textColor=[UIColor colorWithWhite:1 alpha:.8];sub.textAlignment=NSTextAlignmentCenter;[loader addSubview:sub];
     
     UIView*pTrack=[UIView new];pTrack.translatesAutoresizingMaskIntoConstraints=NO;
-    pTrack.backgroundColor=[UIColor colorWithWhite:1 alpha:0.08];
-    pTrack.layer.cornerRadius=3;pTrack.clipsToBounds=YES;
-    pTrack.layer.borderWidth=0.5;pTrack.layer.borderColor=[UIColor colorWithWhite:1 alpha:0.12].CGColor;
+    pTrack.backgroundColor=[UIColor colorWithWhite:0 alpha:0.6];
+    pTrack.layer.cornerRadius=4;pTrack.clipsToBounds=YES;
+    pTrack.layer.borderWidth=0.8;pTrack.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.3].CGColor;
     [loader addSubview:pTrack];
     
     UIView*pBar=[UIView new];pBar.translatesAutoresizingMaskIntoConstraints=NO;
-    pBar.backgroundColor=ZXRed;pBar.layer.cornerRadius=3;
-    pBar.layer.shadowColor=ZXRed.CGColor;pBar.layer.shadowOffset=CGSizeZero;pBar.layer.shadowRadius=8;pBar.layer.shadowOpacity=1.0;
+    pBar.backgroundColor=ZXRed;pBar.layer.cornerRadius=4;
+    pBar.layer.shadowColor=ZXRed.CGColor;pBar.layer.shadowOffset=CGSizeZero;pBar.layer.shadowRadius=12;pBar.layer.shadowOpacity=1.0;
     [pTrack addSubview:pBar];
     
-    NSLayoutConstraint*pWidth=[pBar.widthAnchor constraintEqualToConstant:15];
+    CAGradientLayer*barGrad=[CAGradientLayer layer];
+    barGrad.frame=CGRectMake(0,0,240,8);
+    barGrad.colors=@[(id)[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:1].CGColor, (id)ZXRed.CGColor];
+    barGrad.startPoint=CGPointMake(0,0.5);barGrad.endPoint=CGPointMake(1,0.5);
+    [pBar.layer insertSublayer:barGrad atIndex:0];
+    
+    NSLayoutConstraint*pWidth=[pBar.widthAnchor constraintEqualToConstant:20];
     
     [NSLayoutConstraint activateConstraints:@[
         [logo.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [logo.centerYAnchor constraintEqualToAnchor:loader.centerYAnchor constant:-50],
-        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:10],
+        [logo.centerYAnchor constraintEqualToAnchor:loader.centerYAnchor constant:-55],
+        
+        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:12],
         [badge.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
-        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
-        [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
+        [dot.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
+        [dot.centerYAnchor constraintEqualToAnchor:badge.centerYAnchor],
+        [dot.widthAnchor constraintEqualToConstant:7],
+        [dot.heightAnchor constraintEqualToConstant:7],
+        [badgeLbl.leadingAnchor constraintEqualToAnchor:dot.trailingAnchor constant:6],
         [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
-        [devLoad.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:6],
+        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:5],
+        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-5],
+        
+        [devLoad.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:8],
         [devLoad.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
+        
         [sub.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [sub.topAnchor constraintEqualToAnchor:devLoad.bottomAnchor constant:10],
+        [sub.topAnchor constraintEqualToAnchor:devLoad.bottomAnchor constant:14],
+        
         [pTrack.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [pTrack.topAnchor constraintEqualToAnchor:sub.bottomAnchor constant:18],
-        [pTrack.widthAnchor constraintEqualToConstant:170],
-        [pTrack.heightAnchor constraintEqualToConstant:5],
+        [pTrack.topAnchor constraintEqualToAnchor:sub.bottomAnchor constant:16],
+        [pTrack.widthAnchor constraintEqualToConstant:200],
+        [pTrack.heightAnchor constraintEqualToConstant:7],
+        
         [pBar.leadingAnchor constraintEqualToAnchor:pTrack.leadingAnchor],
         [pBar.topAnchor constraintEqualToAnchor:pTrack.topAnchor],
         [pBar.bottomAnchor constraintEqualToAnchor:pTrack.bottomAnchor],
@@ -1237,23 +1444,30 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     
     [self.view addSubview:loader];
     
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 200 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        pWidth.constant = 90;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 250 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        pWidth.constant = 95;
         [UIView animateWithDuration:0.4 animations:^{ [loader layoutIfNeeded]; }];
-        sub.text = @"> CONNECTING TO SERVER...";
+        sub.text = @"> [02/04] ESCAPING SANDBOX CONTAINERS...";
     });
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 600 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        pWidth.constant = 170;
-        [UIView animateWithDuration:0.4 animations:^{ [loader layoutIfNeeded]; }];
-        sub.text = @"> ALL SYSTEMS READY_";
+        pWidth.constant = 160;
+        [UIView animateWithDuration:0.35 animations:^{ [loader layoutIfNeeded]; }];
+        sub.text = @"> [03/04] CONNECTING TO SECURE AUTH NODE...";
+    });
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 950 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        pWidth.constant = 200;
+        [UIView animateWithDuration:0.25 animations:^{ [loader layoutIfNeeded]; }];
+        sub.text = @"> [04/04] ALL SYSTEMS ARMED & READY_";
         sub.textColor = ZXGreen;
     });
     
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1100 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1250 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
         [self showAuth];
-        [UIView animateWithDuration:0.3 animations:^{
+        [UIView animateWithDuration:0.35 animations:^{
             loader.alpha = 0;
+            loader.transform = CGAffineTransformMakeScale(1.06, 1.06);
         } completion:^(BOOL f){
             [loader removeFromSuperview];
         }];
