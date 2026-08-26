@@ -351,6 +351,15 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     badgeLbl.text=@"🔒 SECURITY CLEARANCE REQUIRED";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
     badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.35 blue:0.5 alpha:1.0];[badge addSubview:badgeLbl];
     
+    UILabel*devInfo=[UILabel new];devInfo.translatesAutoresizingMaskIntoConstraints=NO;
+    NSString *model = [UIDevice currentDevice].model;
+    NSString *osVer = [UIDevice currentDevice].systemVersion;
+    devInfo.text=[NSString stringWithFormat:@"📱 DEVICE: %@ • iOS %@", model.uppercaseString, osVer];
+    devInfo.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
+    devInfo.textColor=[UIColor colorWithRed:0.2 green:0.84 blue:0.4 alpha:0.9];
+    devInfo.textAlignment=NSTextAlignmentCenter;
+    [self.view addSubview:devInfo];
+    
     UIView*card=ZXGlassView(18);card.translatesAutoresizingMaskIntoConstraints=NO;
     card.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.38 alpha:0.8].CGColor;
     card.layer.borderWidth=1.2;
@@ -425,16 +434,19 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     [NSLayoutConstraint activateConstraints:@[
         [logo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [logo.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-130],
-        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:10],
+        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:8],
         [badge.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
         [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
         [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
         [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
         
+        [devInfo.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:8],
+        [devInfo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        
         [card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:22],
         [card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-22],
-        [card.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:26],
+        [card.topAnchor constraintEqualToAnchor:devInfo.bottomAnchor constant:14],
         
         [lbl.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
         [lbl.topAnchor constraintEqualToAnchor:card.topAnchor constant:14],
@@ -881,6 +893,49 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     NSString*u=_cfg.telegram.length?_cfg.telegram:@"https://t.me/nothing6769";
     [[UIApplication sharedApplication]openURL:[NSURL URLWithString:u] options:@{} completionHandler:nil];
 }
+-(void)showSettingsInfo{
+    NSString *model = [UIDevice currentDevice].model;
+    NSString *devName = [UIDevice currentDevice].name;
+    NSString *osVer = [UIDevice currentDevice].systemVersion;
+    NSString *savedKey = [[NSUserDefaults standardUserDefaults] stringForKey:kSavedKey] ?: @"N/A";
+    
+    NSString *msg = [NSString stringWithFormat:
+        @"📱 DEVICE INFO\n"
+        @"Name: %@\n"
+        @"Model: %@\n"
+        @"OS: iOS %@\n\n"
+        @"🔑 LICENSE INFO\n"
+        @"Key: %@\n"
+        @"Status: ACTIVE (VERIFIED)\n\n"
+        @"⚙️ SYSTEM STATUS\n"
+        @"Engine: MCM Sandbox Bypass\n"
+        @"Server: 144.172.105.169\n"
+        @"Version: v%@",
+        devName, model, osVer, savedKey, _cfg.version ?: @"2.7.1"];
+        
+    UIAlertController *ac = [UIAlertController alertControllerWithTitle:@"⚙️ SYSTEM & KEY INFO"
+                                                                message:msg
+                                                         preferredStyle:UIAlertControllerStyleAlert];
+    
+    [ac addAction:[UIAlertAction actionWithTitle:@"📋 Copy Key" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        if(savedKey.length && ![savedKey isEqualToString:@"N/A"]) {
+            [UIPasteboard generalPasteboard].string = savedKey;
+        }
+    }]];
+    
+    [ac addAction:[UIAlertAction actionWithTitle:@"🚪 Logout / Change Key" style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:kSavedKey];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        ZEXInjectorVC *rootVC = (ZEXInjectorVC *)[UIApplication sharedApplication].keyWindow.rootViewController;
+        if([rootVC isKindOfClass:[ZEXInjectorVC class]]) {
+            [rootVC showAuth];
+        }
+    }]];
+    
+    [ac addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+    
+    [self presentViewController:ac animated:YES completion:nil];
+}
 // ── Build UI ──────────────────────────────────────────────────────
 -(void)buildUI{
     // Header
@@ -895,9 +950,15 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     _headerConn=[UILabel new];_headerConn.translatesAutoresizingMaskIntoConstraints=NO;
     _headerConn.text=@"Connecting";_headerConn.font=[UIFont systemFontOfSize:10 weight:UIFontWeightMedium];
     _headerConn.textColor=ZXGray;[pill addSubview:_headerConn];
+    
     UIButton*tgBtn=[UIButton buttonWithType:UIButtonTypeSystem];tgBtn.translatesAutoresizingMaskIntoConstraints=NO;
     [tgBtn setImage:[UIImage systemImageNamed:@"bell.fill"] forState:0];tgBtn.tintColor=[UIColor colorWithWhite:.4 alpha:1];
     [tgBtn addTarget:self action:@selector(openTG) forControlEvents:UIControlEventTouchUpInside];[self.view addSubview:tgBtn];
+    
+    UIButton*settBtn=[UIButton buttonWithType:UIButtonTypeSystem];settBtn.translatesAutoresizingMaskIntoConstraints=NO;
+    [settBtn setImage:[UIImage systemImageNamed:@"gearshape.fill"] forState:0];settBtn.tintColor=[UIColor colorWithRed:1.0 green:0.35 blue:0.45 alpha:1.0];
+    [settBtn addTarget:self action:@selector(showSettingsInfo) forControlEvents:UIControlEventTouchUpInside];[self.view addSubview:settBtn];
+    
     // Status card
     UIView*sc=ZXGlassView(13);sc.translatesAutoresizingMaskIntoConstraints=NO;
     sc.layer.borderColor=ZXRed.CGColor;ZXRedGlow(sc,5);[self.view addSubview:sc];
@@ -962,7 +1023,9 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     [NSLayoutConstraint activateConstraints:@[
         [brand.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:16],
         [brand.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:8],
-        [tgBtn.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-14],
+        [settBtn.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-14],
+        [settBtn.centerYAnchor constraintEqualToAnchor:brand.centerYAnchor],
+        [tgBtn.trailingAnchor constraintEqualToAnchor:settBtn.leadingAnchor constant:-10],
         [tgBtn.centerYAnchor constraintEqualToAnchor:brand.centerYAnchor],
         [pill.trailingAnchor constraintEqualToAnchor:tgBtn.leadingAnchor constant:-8],
         [pill.centerYAnchor constraintEqualToAnchor:brand.centerYAnchor],
@@ -1043,6 +1106,14 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     badgeLbl.text=@"⚡ KERNEL BYPASS ENGINE";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
     badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.3 blue:0.45 alpha:1.0];[badge addSubview:badgeLbl];
     
+    UILabel*devLoad=[UILabel new];devLoad.translatesAutoresizingMaskIntoConstraints=NO;
+    NSString *model = [UIDevice currentDevice].model;
+    NSString *osVer = [UIDevice currentDevice].systemVersion;
+    devLoad.text=[NSString stringWithFormat:@"📱 %@ • iOS %@", model.uppercaseString, osVer];
+    devLoad.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
+    devLoad.textColor=[UIColor colorWithRed:0.2 green:0.84 blue:0.4 alpha:0.9];
+    devLoad.textAlignment=NSTextAlignmentCenter;[loader addSubview:devLoad];
+    
     UILabel*sub=[UILabel new];sub.translatesAutoresizingMaskIntoConstraints=NO;
     sub.text=@"> INITIALIZING ENGINE...";
     sub.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
@@ -1064,14 +1135,16 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
     [NSLayoutConstraint activateConstraints:@[
         [logo.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
         [logo.centerYAnchor constraintEqualToAnchor:loader.centerYAnchor constant:-50],
-        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:12],
+        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:10],
         [badge.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
         [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
         [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
         [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
         [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
+        [devLoad.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:6],
+        [devLoad.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
         [sub.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [sub.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:16],
+        [sub.topAnchor constraintEqualToAnchor:devLoad.bottomAnchor constant:10],
         [pTrack.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
         [pTrack.topAnchor constraintEqualToAnchor:sub.bottomAnchor constant:18],
         [pTrack.widthAnchor constraintEqualToConstant:170],
