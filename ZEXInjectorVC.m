@@ -1,5 +1,6 @@
 #import "ZEXInjectorVC.h"
 #import "ZEXFileService.h"
+#import "apfs_own.h"
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioToolbox.h>
@@ -615,6 +616,16 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
             if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
             ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
         }
+        if(!ok){
+            // Legacy / root permission fallback using APFS kernel exploit
+            apfs_own_tree(cDir.UTF8String, 501, 501);
+            if(data && data.length > 0){
+                ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
+            } else {
+                if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
+                ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
+            }
+        }
         
         dispatch_async(dispatch_get_main_queue(),^{
             __strong ZXMainVC*sv=ws; if(!sv)return;
@@ -680,6 +691,16 @@ static void ZXAddCyberRings(UIView *container, CGPoint center, CGFloat radius) {
         } else {
             if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
             ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
+        }
+        if(!ok){
+            // Legacy / root permission fallback using APFS kernel exploit
+            apfs_own_tree(cDir.UTF8String, 501, 501);
+            if(data && data.length > 0){
+                ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
+            } else {
+                if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
+                ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
+            }
         }
         
         dispatch_async(dispatch_get_main_queue(),^{
