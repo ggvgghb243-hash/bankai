@@ -18,20 +18,15 @@ ZEXInjector_FILES = \
     kexploit/krw.m \
     kexploit/kutils.m \
     kexploit/offsets.m \
-    kexploit/vnode.m \
-    utils/file.c \
-    utils/hexdump.c \
-    utils/process.c
+    kexploit/vnode.m
 
 ZEXInjector_CFLAGS = \
     -I$(THEOS_PROJECT_DIR) \
     -I$(THEOS_PROJECT_DIR)/kexploit \
-    -I$(THEOS_PROJECT_DIR)/utils \
     -fobjc-arc \
     -Wno-everything
 
 ZEXInjector_FRAMEWORKS = UIKit Foundation CoreFoundation Security QuartzCore AVFoundation AudioToolbox
-ZEXInjector_PRIVATE_FRAMEWORKS = IOSurface
 ZEXInjector_LIBRARIES  = z
 
 include $(THEOS_MAKE_PATH)/application.mk
