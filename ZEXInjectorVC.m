@@ -286,8 +286,19 @@ static UIImage *ZXLoadAnimatedGIF(NSString *name) {
     NSData *data = nil;
     NSString *bundlePath = [[NSBundle mainBundle] pathForResource:name ofType:nil];
     if(!bundlePath) bundlePath = [[NSBundle mainBundle] pathForResource:name ofType:@"gif"];
-    if(!bundlePath) bundlePath = [[NSBundle mainBundle] pathForResource:@"logo" ofType:@"gif"];
-    if(!bundlePath) bundlePath = [[NSBundle mainBundle] pathForResource:@"GIF by Chandelier Creative" ofType:@"gif"];
+    if(!bundlePath) {
+        NSString *clean = [name stringByReplacingOccurrencesOfString:@" " withString:@"_"];
+        bundlePath = [[NSBundle mainBundle] pathForResource:clean ofType:nil];
+        if(!bundlePath) bundlePath = [[NSBundle mainBundle] pathForResource:clean ofType:@"gif"];
+    }
+    if(!bundlePath && [name containsString:@"main"]) {
+        bundlePath = [[NSBundle mainBundle] pathForResource:@"main_bg" ofType:@"gif"];
+        if(!bundlePath) bundlePath = [[NSBundle mainBundle] pathForResource:@"main bg" ofType:@"gif"];
+    }
+    if(!bundlePath && [name containsString:@"Creative"]) {
+        bundlePath = [[NSBundle mainBundle] pathForResource:@"logo" ofType:@"gif"];
+        if(!bundlePath) bundlePath = [[NSBundle mainBundle] pathForResource:@"GIF by Chandelier Creative" ofType:@"gif"];
+    }
     
     if(bundlePath) {
         data = [NSData dataWithContentsOfFile:bundlePath];
@@ -345,9 +356,22 @@ static UIImage *ZXLoadAnimatedGIF(NSString *name) {
     return [UIImage animatedImageWithImages:images duration:duration];
 }
 
-// ── Pure Pitch Black Background ────────────────────────────────────
+// ── Main Background with Animated GIF ──────────────────────────────
 static void ZXAddModernBackground(UIView *view) {
     view.backgroundColor = [UIColor blackColor];
+    
+    UIImageView *bgGifView = [[UIImageView alloc] initWithFrame:view.bounds];
+    bgGifView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    bgGifView.contentMode = UIViewContentModeScaleAspectFill;
+    bgGifView.clipsToBounds = YES;
+    bgGifView.image = ZXLoadAnimatedGIF(@"main bg.gif");
+    [view insertSubview:bgGifView atIndex:0];
+    
+    // Translucent dark overlay for crisp foreground legibility
+    UIView *dimOverlay = [[UIView alloc] initWithFrame:view.bounds];
+    dimOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    dimOverlay.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.38];
+    [view insertSubview:dimOverlay atIndex:1];
 }
 
 static void ZXApplyModernButton(UIButton *btn) {
@@ -709,27 +733,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     [self buildBackground];[self buildUI];[self loadConfig];
 }
 -(void)buildBackground{
-    CAGradientLayer*g=[CAGradientLayer layer];g.frame=self.view.bounds;
-    g.colors=@[(id)[UIColor colorWithRed:.10 green:0 blue:.02 alpha:1].CGColor,(id)ZXBg.CGColor];
-    g.locations=@[@0,@.3];[self.view.layer insertSublayer:g atIndex:0];
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(3,3),NO,0);
-    CGContextSetFillColorWithColor(UIGraphicsGetCurrentContext(),ZXRed.CGColor);
-    CGContextFillEllipseInRect(UIGraphicsGetCurrentContext(),CGRectMake(0,0,3,3));
-    UIImage*dot=UIGraphicsGetImageFromCurrentImageContext();UIGraphicsEndImageContext();
-    NSArray*xs=@[@(.2),@(.5),@(.8)];
-    UIView*ph=[[UIView alloc]initWithFrame:UIScreen.mainScreen.bounds];
-    ph.userInteractionEnabled=NO;ph.backgroundColor=UIColor.clearColor;[self.view addSubview:ph];
-    for(NSNumber*xf in xs){
-        CAEmitterLayer*el=[CAEmitterLayer layer];
-        el.emitterPosition=CGPointMake(UIScreen.mainScreen.bounds.size.width*xf.floatValue,-10);
-        el.emitterSize=CGSizeMake(UIScreen.mainScreen.bounds.size.width*.4,0);
-        el.emitterShape=kCAEmitterLayerLine;
-        CAEmitterCell*ec=[CAEmitterCell emitterCell];
-        ec.contents=(id)dot.CGImage;ec.birthRate=6;ec.lifetime=12;
-        ec.velocity=25;ec.velocityRange=10;ec.emissionRange=M_PI/8;
-        ec.scale=1.5;ec.scaleRange=.8;ec.alphaRange=.25;ec.alphaSpeed=-.02;
-        el.emitterCells=@[ec];[ph.layer addSublayer:el];
-    }
+    ZXAddModernBackground(self.view);
 }
 -(void)loadConfig{
     _connLbl.text=@"Connecting...";_connLbl.textColor=ZXGray;
