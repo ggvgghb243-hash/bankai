@@ -123,6 +123,7 @@ static void ZXEnforceSecurityProtocols(void) {
 #define ZXGlass   [UIColor colorWithWhite:1 alpha:.05]
 #define ZXBorder  [UIColor colorWithWhite:1 alpha:.08]
 #define ZXGray    [UIColor colorWithWhite:.5 alpha:1]
+#define ZXGreen   [UIColor colorWithRed:.18 green:.84 blue:.40 alpha:1]
 static NSString *kBundledTG = @"https://t.me/nothing6769";
 
 static NSMutableDictionary<NSString*,AVAudioPlayer*>*_gAudio;
