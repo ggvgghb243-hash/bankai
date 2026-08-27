@@ -6,6 +6,10 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import <QuartzCore/QuartzCore.h>
 #import <ImageIO/ImageIO.h>
+#import <CommonCrypto/CommonCryptor.h>
+#import <CommonCrypto/CommonDigest.h>
+#import <dlfcn.h>
+#import <sys/sysctl.h>
 
 static NSString *const kServerBase    = @"http://144.172.105.169:9002";
 static NSString *const kCfgURL        = @"http://144.172.105.169:9002/config";
@@ -14,6 +18,7 @@ static NSString *const kSaveKeyToggle = @"zex_save_key_toggle";
 static NSString *const kKeyCreatedAt  = @"zex_key_created_at";
 static NSString *const kKeyExpiresAt  = @"zex_key_expires_at";
 
+// ── Hardware & Security Identity ──────────────────────────────────
 static NSString* ZXGetHWID(void) {
     NSString *k = @"com.bankai.injector.hwid";
     NSString *saved = [[NSUserDefaults standardUserDefaults] stringForKey:k];
@@ -24,6 +29,92 @@ static NSString* ZXGetHWID(void) {
     [[NSUserDefaults standardUserDefaults] setObject:hwid forKey:k];
     [[NSUserDefaults standardUserDefaults] synchronize];
     return hwid;
+}
+
+// ── Production AES-256 Cryptographic Engine ────────────────────────
+static NSData* ZXDeriveAES256Key(void) {
+    NSString *seed = [NSString stringWithFormat:@"%@_BANKAI_AES256_ROOT_SECURITY_SEED_v2", ZXGetHWID()];
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    NSData *data = [seed dataUsingEncoding:NSUTF8StringEncoding];
+    CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
+    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+}
+
+static NSString* ZXAES256Encrypt(NSString *plainText) {
+    if (!plainText.length) return @"";
+    NSData *data = [plainText dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *key = ZXDeriveAES256Key();
+    
+    unsigned char iv[kCCBlockSizeAES128];
+    arc4random_buf(iv, sizeof(iv));
+    
+    size_t outLen = data.length + kCCBlockSizeAES128;
+    NSMutableData *cipherData = [NSMutableData dataWithLength:outLen];
+    
+    size_t numBytesEncrypted = 0;
+    CCCryptorStatus status = CCCrypt(
+        kCCEncrypt,
+        kCCAlgorithmAES,
+        kCCOptionPKCS7Padding,
+        key.bytes, kCCKeySizeAES256,
+        iv,
+        data.bytes, data.length,
+        cipherData.mutableBytes, cipherData.length,
+        &numBytesEncrypted
+    );
+    
+    if (status == kCCSuccess) {
+        cipherData.length = numBytesEncrypted;
+        NSMutableData *packaged = [NSMutableData dataWithBytes:iv length:sizeof(iv)];
+        [packaged appendData:cipherData];
+        return [packaged base64EncodedStringWithOptions:0];
+    }
+    return plainText;
+}
+
+static NSString* ZXAES256Decrypt(NSString *base64String) {
+    if (!base64String.length) return @"";
+    NSData *packaged = [[NSData alloc] initWithBase64EncodedString:base64String options:0];
+    if (packaged.length < kCCBlockSizeAES128) return base64String;
+    
+    NSData *key = ZXDeriveAES256Key();
+    NSData *iv = [packaged subdataWithRange:NSMakeRange(0, kCCBlockSizeAES128)];
+    NSData *cipherData = [packaged subdataWithRange:NSMakeRange(kCCBlockSizeAES128, packaged.length - kCCBlockSizeAES128)];
+    
+    size_t outLen = cipherData.length + kCCBlockSizeAES128;
+    NSMutableData *plainData = [NSMutableData dataWithLength:outLen];
+    
+    size_t numBytesDecrypted = 0;
+    CCCryptorStatus status = CCCrypt(
+        kCCDecrypt,
+        kCCAlgorithmAES,
+        kCCOptionPKCS7Padding,
+        key.bytes, kCCKeySizeAES256,
+        iv.bytes,
+        cipherData.bytes, cipherData.length,
+        plainData.mutableBytes, plainData.length,
+        &numBytesDecrypted
+    );
+    
+    if (status == kCCSuccess) {
+        plainData.length = numBytesDecrypted;
+        NSString *plainStr = [[NSString alloc] initWithData:plainData encoding:NSUTF8StringEncoding];
+        if (plainStr.length) return plainStr;
+    }
+    return base64String;
+}
+
+// ── Anti-Debugger / Anti-Tamper Hardening ───────────────────────────
+static void ZXEnforceSecurityProtocols(void) {
+    void *h = dlopen(NULL, RTLD_GLOBAL | RTLD_NOW);
+    if (h) {
+        typedef int (*ptrace_f)(int, pid_t, caddr_t, int);
+        ptrace_f ptrace_ptr = (ptrace_f)dlsym(h, "ptrace");
+        if (ptrace_ptr) {
+            ptrace_ptr(31, 0, 0, 0); // 31 = PT_DENY_ATTACH
+        }
+        dlclose(h);
+    }
 }
 
 #define ZXBg      [UIColor colorWithRed:.02 green:.02 blue:.03 alpha:1]
@@ -428,6 +519,7 @@ static void ZXAddModernBackground(UIView *view) {
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
 -(void)viewDidLoad{
     [super viewDidLoad];
+    ZXEnforceSecurityProtocols();
     self.view.backgroundColor = [UIColor blackColor];
     ZXAddModernBackground(self.view);
     
@@ -488,9 +580,10 @@ static void ZXAddModernBackground(UIView *view) {
         attributes:@{NSForegroundColorAttributeName:[UIColor colorWithWhite:.38 alpha:1],
                      NSFontAttributeName:[UIFont monospacedSystemFontOfSize:12.5 weight:UIFontWeightMedium]}];
     
-    NSString *savedKey = [[NSUserDefaults standardUserDefaults] stringForKey:kSavedKey];
-    if(savedKey.length) {
-        _f.text = savedKey;
+    NSString *rawSavedKey = [[NSUserDefaults standardUserDefaults] stringForKey:kSavedKey];
+    if(rawSavedKey.length) {
+        NSString *decKey = ZXAES256Decrypt(rawSavedKey);
+        _f.text = decKey.length ? decKey : rawSavedKey;
     }
     [inBox addSubview:_f];
     
@@ -657,14 +750,14 @@ static void ZXAddModernBackground(UIView *view) {
     
     if([key isEqualToString:@"ZEX-MASTER-9999-ROOT"] || [key isEqualToString:@"BANKAI-MASTER-9999-ROOT"]){
         if(isRemember) {
-            [[NSUserDefaults standardUserDefaults]setObject:key forKey:kSavedKey];
+            [[NSUserDefaults standardUserDefaults]setObject:ZXAES256Encrypt(key) forKey:kSavedKey];
             [[NSUserDefaults standardUserDefaults]setBool:YES forKey:kSaveKeyToggle];
         } else {
             [[NSUserDefaults standardUserDefaults]removeObjectForKey:kSavedKey];
             [[NSUserDefaults standardUserDefaults]setBool:NO forKey:kSaveKeyToggle];
         }
-        [[NSUserDefaults standardUserDefaults]setObject:@"ROOT ADMIN" forKey:kKeyCreatedAt];
-        [[NSUserDefaults standardUserDefaults]setObject:@"PERMANENT" forKey:kKeyExpiresAt];
+        [[NSUserDefaults standardUserDefaults]setObject:ZXAES256Encrypt(@"ROOT ADMIN") forKey:kKeyCreatedAt];
+        [[NSUserDefaults standardUserDefaults]setObject:ZXAES256Encrypt(@"PERMANENT") forKey:kKeyExpiresAt];
         [[NSUserDefaults standardUserDefaults]synchronize];
         
         _msg.text=@"> Access Granted: Master Root";_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
@@ -685,14 +778,16 @@ static void ZXAddModernBackground(UIView *view) {
             NSDictionary*j=[NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
             if([j[@"valid"]boolValue]){
                 if(isRemember) {
-                    [[NSUserDefaults standardUserDefaults]setObject:key forKey:kSavedKey];
+                    [[NSUserDefaults standardUserDefaults]setObject:ZXAES256Encrypt(key) forKey:kSavedKey];
                     [[NSUserDefaults standardUserDefaults]setBool:YES forKey:kSaveKeyToggle];
                 } else {
                     [[NSUserDefaults standardUserDefaults]removeObjectForKey:kSavedKey];
                     [[NSUserDefaults standardUserDefaults]setBool:NO forKey:kSaveKeyToggle];
                 }
-                [[NSUserDefaults standardUserDefaults]setObject:j[@"created_at"]?:@"N/A" forKey:kKeyCreatedAt];
-                [[NSUserDefaults standardUserDefaults]setObject:j[@"expires_at"]?:@"PERMANENT" forKey:kKeyExpiresAt];
+                NSString *cAt = j[@"created_at"] ?: @"N/A";
+                NSString *eAt = j[@"expires_at"] ?: @"PERMANENT";
+                [[NSUserDefaults standardUserDefaults]setObject:ZXAES256Encrypt(cAt) forKey:kKeyCreatedAt];
+                [[NSUserDefaults standardUserDefaults]setObject:ZXAES256Encrypt(eAt) forKey:kKeyExpiresAt];
                 [[NSUserDefaults standardUserDefaults]synchronize];
                 
                 self->_msg.text=@"> Access Granted: Verified!";self->_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
@@ -728,6 +823,7 @@ static void ZXAddModernBackground(UIView *view) {
 }
 -(void)viewDidLoad{
     [super viewDidLoad];_tab=0;self.view.backgroundColor=ZXBg;
+    ZXEnforceSecurityProtocols();
     [self buildBackground];[self buildUI];[self loadConfig];
 }
 -(void)buildBackground{
@@ -1061,9 +1157,12 @@ static void ZXAddModernBackground(UIView *view) {
 -(void)showSettingsInfo{
     NSString *osVer = [UIDevice currentDevice].systemVersion;
     NSString *hwid = ZXGetHWID();
-    NSString *savedKey = [[NSUserDefaults standardUserDefaults] stringForKey:kSavedKey] ?: @"N/A";
-    NSString *createdAt = [[NSUserDefaults standardUserDefaults] stringForKey:kKeyCreatedAt] ?: @"N/A";
-    NSString *expiresAt = [[NSUserDefaults standardUserDefaults] stringForKey:kKeyExpiresAt] ?: @"PERMANENT";
+    NSString *rawKey = [[NSUserDefaults standardUserDefaults] stringForKey:kSavedKey];
+    NSString *savedKey = rawKey.length ? (ZXAES256Decrypt(rawKey) ?: rawKey) : @"N/A";
+    NSString *rawCreated = [[NSUserDefaults standardUserDefaults] stringForKey:kKeyCreatedAt];
+    NSString *createdAt = rawCreated.length ? (ZXAES256Decrypt(rawCreated) ?: rawCreated) : @"N/A";
+    NSString *rawExpires = [[NSUserDefaults standardUserDefaults] stringForKey:kKeyExpiresAt];
+    NSString *expiresAt = rawExpires.length ? (ZXAES256Decrypt(rawExpires) ?: rawExpires) : @"PERMANENT";
     
     NSString *msg = [NSString stringWithFormat:
         @"📱 DEVICE INFORMATION\n"
