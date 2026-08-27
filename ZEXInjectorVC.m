@@ -123,15 +123,33 @@ static void ZXEnforceSecurityProtocols(void) {
 #define ZXGlass   [UIColor colorWithWhite:1 alpha:.05]
 #define ZXBorder  [UIColor colorWithWhite:1 alpha:.08]
 #define ZXGray    [UIColor colorWithWhite:.5 alpha:1]
-#define ZXGreen   [UIColor colorWithRed:.18 green:.84 blue:.40 alpha:1]
+static NSString *kBundledTG = @"https://t.me/nothing6769";
 
 static NSMutableDictionary<NSString*,AVAudioPlayer*>*_gAudio;
 static void ZXPlay(NSString*n){
     if(!_gAudio)_gAudio=[NSMutableDictionary dictionary];
-    NSString*p=[[NSBundle mainBundle]pathForResource:n ofType:@"wav"];
+    @try {
+        AVAudioSession *session = [AVAudioSession sharedInstance];
+        [session setCategory:AVAudioSessionCategoryPlayback withOptions:AVAudioSessionCategoryOptionMixWithOthers error:nil];
+        [session setActive:YES error:nil];
+    } @catch (id ex) {}
+
+    NSArray<NSString*> *exts = @[@"wav", @"mp3", @"m4a", @"caf", @"aac", @"aiff"];
+    NSString *p = nil;
+    for (NSString *ext in exts) {
+        p = [[NSBundle mainBundle] pathForResource:n ofType:ext];
+        if (p) break;
+    }
+
     if(p){
         NSError*e=nil;AVAudioPlayer*pl=[[AVAudioPlayer alloc]initWithContentsOfURL:[NSURL fileURLWithPath:p] error:&e];
-        if(pl&&!e){pl.volume=1;[_gAudio setObject:pl forKey:n];[pl play];return;}
+        if(pl&&!e){
+            [pl prepareToPlay];
+            pl.volume=1.0;
+            [_gAudio setObject:pl forKey:n];
+            [pl play];
+            return;
+        }
     }
     if([n isEqualToString:@"remove"])AudioServicesPlaySystemSound(1104);
     else if([n isEqualToString:@"activate"])AudioServicesPlaySystemSound(1100);
@@ -1151,7 +1169,11 @@ static void ZXAddModernBackground(UIView *view) {
 }
 -(void)tabTap:(UIButton*)b{[self switchTab:b.tag];}
 -(void)openTG{
-    NSString*u=_cfg.telegram.length?_cfg.telegram:@"https://t.me/nothing6769";
+    NSString*u = kBundledTG;
+    if (_cfg.telegram.length > 0 && ![_cfg.telegram isEqualToString:@"https://t.me/nothing6769"]) {
+        u = _cfg.telegram;
+    }
+    if (!u.length) u = @"https://t.me/nothing6769";
     [[UIApplication sharedApplication]openURL:[NSURL URLWithString:u] options:@{} completionHandler:nil];
 }
 -(void)showSettingsInfo{
