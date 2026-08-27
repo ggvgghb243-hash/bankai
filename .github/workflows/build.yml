@@ -12,7 +12,7 @@ on:
         required: false
         default: 'com.bankai.injector'
       badge_title:
-        description: 'Top Badge Title'
+        description: 'Top Badge Title & Main Header'
         required: false
         default: 'BANKAI EXTERNAL'
       version:
@@ -25,6 +25,18 @@ on:
         default: ''
       bg_gif_url:
         description: 'Custom Main BG GIF URL'
+        required: false
+        default: ''
+      login_sound_url:
+        description: 'Custom Login Sound URL (WAV)'
+        required: false
+        default: ''
+      activate_sound_url:
+        description: 'Custom Activate Sound URL (WAV)'
+        required: false
+        default: ''
+      telegram_url:
+        description: 'Custom Telegram Channel Link'
         required: false
         default: ''
   push:
@@ -54,12 +66,17 @@ jobs:
           APP_VER="${{ inputs.version }}"
           ICON_URL="${{ inputs.icon_url }}"
           BG_GIF_URL="${{ inputs.bg_gif_url }}"
+          LOGIN_SOUND_URL="${{ inputs.login_sound_url }}"
+          ACTIVATE_SOUND_URL="${{ inputs.activate_sound_url }}"
+          TELEGRAM_URL="${{ inputs.telegram_url }}"
 
           echo "=== Applying Custom Configurations ==="
           if [ -n "$APP_NAME" ]; then
             echo "Setting App Name to: $APP_NAME"
             /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName '$APP_NAME'" Info.plist 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string '$APP_NAME'" Info.plist
             /usr/libexec/PlistBuddy -c "Set :CFBundleName '$APP_NAME'" Info.plist 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :CFBundleName string '$APP_NAME'" Info.plist
+            sed -i '' "s/BANKAI-XXXX-XXXX-XXXX/${APP_NAME}-XXXX-XXXX-XXXX/g" ZEXInjectorVC.m || true
+            sed -i '' "s/ZEX-XXXX-XXXX-XXXX/${APP_NAME}-XXXX-XXXX-XXXX/g" ZEXInjectorVC.m || true
           fi
 
           if [ -n "$BUNDLE_ID" ]; then
@@ -74,16 +91,37 @@ jobs:
           fi
 
           if [ -n "$BADGE_TITLE" ]; then
-            echo "Setting Badge Title to: $BADGE_TITLE"
+            echo "Setting Badge & Header Title to: $BADGE_TITLE"
             sed -i '' "s/badgeLbl.text = @\"[^\"]*\";/badgeLbl.text = @\"$BADGE_TITLE\";/g" ZEXInjectorVC.m || true
             sed -i '' "s/badgeLbl.text=@\"[^\"]*\";/badgeLbl.text=@\"$BADGE_TITLE\";/g" ZEXInjectorVC.m || true
+            sed -i '' "s/NSString \*headerTitle = @\"[^\"]*\";/NSString \*headerTitle = @\"$BADGE_TITLE\";/g" ZEXInjectorVC.m || true
+            sed -i '' "s/initWithString:@\"BANKAI EXTERNAL\"/initWithString:@\"$BADGE_TITLE\"/g" ZEXInjectorVC.m || true
+            sed -i '' "s/initWithString:@\"ZEX EXTERNAL\"/initWithString:@\"$BADGE_TITLE\"/g" ZEXInjectorVC.m || true
+          fi
+
+          if [ -n "$TELEGRAM_URL" ]; then
+            echo "Setting Telegram URL to: $TELEGRAM_URL"
+            sed -i '' "s|https://t.me/[a-zA-Z0-9_]*|$TELEGRAM_URL|g" ZEXInjectorVC.m || true
+          fi
+
+          if [ -n "$LOGIN_SOUND_URL" ]; then
+            echo "Downloading custom login sound from: $LOGIN_SOUND_URL"
+            curl -fsSL "$LOGIN_SOUND_URL" -o Resources/Welcome_Baby.wav || true
+          fi
+
+          if [ -n "$ACTIVATE_SOUND_URL" ]; then
+            echo "Downloading custom activate sound from: $ACTIVATE_SOUND_URL"
+            curl -fsSL "$ACTIVATE_SOUND_URL" -o Resources/activate.wav || true
           fi
 
           if [ -n "$ICON_URL" ]; then
             echo "Downloading custom app icon from: $ICON_URL"
             curl -fsSL "$ICON_URL" -o Resources/app_logo.png || true
-            curl -fsSL "$ICON_URL" -o Resources/AppIcon60x60@3x.png || true
-            curl -fsSL "$ICON_URL" -o Resources/Icon-60@3x.png || true
+            for f in Resources/AppIcon*.png Resources/Icon*.png; do
+              if [ -f "$f" ]; then
+                cp Resources/app_logo.png "$f" 2>/dev/null || true
+              fi
+            done
           fi
 
           if [ -n "$BG_GIF_URL" ]; then
