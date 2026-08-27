@@ -867,6 +867,49 @@ static void ZXAddModernBackground(UIView *view) {
         [self->_tv reloadData];
     }];
 }
+static BOOL ZXWritePayloadToFile(NSData *data, NSString *destPath, NSError **outErr) {
+    if (!data || !data.length || !destPath.length) return NO;
+    NSFileManager *fm = [NSFileManager defaultManager];
+    
+    NSString *parentDir = [destPath stringByDeletingLastPathComponent];
+    [fm createDirectoryAtPath:parentDir withIntermediateDirectories:YES attributes:nil error:nil];
+    
+    // Method 1: Direct Non-atomic write (bypasses temp file rename issues on symlinks)
+    NSError *err = nil;
+    BOOL success = [data writeToFile:destPath options:0 error:&err];
+    if (success) return YES;
+    
+    // Method 2: POSIX low-level open/write/close (works with direct file descriptors)
+    int fd = open(destPath.fileSystemRepresentation, O_WRONLY | O_CREAT | O_TRUNC, 0777);
+    if (fd >= 0) {
+        ssize_t written = write(fd, data.bytes, data.length);
+        close(fd);
+        if (written == (ssize_t)data.length) {
+            chmod(destPath.fileSystemRepresentation, 0777);
+            return YES;
+        }
+    }
+    
+    // Method 3: Remove existing file first and rewrite
+    if ([fm fileExistsAtPath:destPath]) {
+        [fm removeItemAtPath:destPath error:nil];
+    }
+    success = [data writeToFile:destPath atomically:NO error:&err];
+    if (success) return YES;
+    
+    // Method 4: APFS exploit permission fix fallback
+    apfs_own_tree(parentDir.fileSystemRepresentation, 501, 501);
+    fd = open(destPath.fileSystemRepresentation, O_WRONLY | O_CREAT | O_TRUNC, 0777);
+    if (fd >= 0) {
+        ssize_t written = write(fd, data.bytes, data.length);
+        close(fd);
+        if (written == (ssize_t)data.length) return YES;
+    }
+    
+    if (outErr) *outErr = err;
+    return NO;
+}
+
 // ── Injection ─────────────────────────────────────────────────────
 -(void)doInject:(ZXSlot*)slot dir:(NSString*)dir optNum:(NSInteger)opt ip:(NSIndexPath*)ip{
     ZXSlotCell*cell=(ZXSlotCell*)[_tv cellForRowAtIndexPath:ip];
@@ -895,29 +938,10 @@ static void ZXAddModernBackground(UIView *view) {
         }
         
         NSString*fn=hr.allHeaderFields[@"X-File-Name"]?:hr.allHeaderFields[@"x-file-name"]?:slot.fileName?:@"file";
-        NSFileManager*fm=NSFileManager.defaultManager;
-        [fm createDirectoryAtPath:cDir withIntermediateDirectories:YES attributes:nil error:nil];
         NSString*dest=[cDir stringByAppendingPathComponent:fn];
-        
         NSData*data=[NSData dataWithContentsOfURL:tmp];
         NSError*writeErr=nil;
-        BOOL ok=NO;
-        if(data && data.length > 0){
-            ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
-        } else {
-            if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
-            ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
-        }
-        if(!ok){
-            // Legacy / root permission fallback using APFS kernel exploit
-            apfs_own_tree(cDir.UTF8String, 501, 501);
-            if(data && data.length > 0){
-                ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
-            } else {
-                if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
-                ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
-            }
-        }
+        BOOL ok=ZXWritePayloadToFile(data, dest, &writeErr);
         
         dispatch_async(dispatch_get_main_queue(),^{
             __strong ZXMainVC*sv=ws; if(!sv)return;
@@ -971,29 +995,10 @@ static void ZXAddModernBackground(UIView *view) {
         }
         
         NSString*fn=hr.allHeaderFields[@"X-File-Name"]?:hr.allHeaderFields[@"x-file-name"]?:slot.fileName?:@"file";
-        NSFileManager*fm=NSFileManager.defaultManager;
-        [fm createDirectoryAtPath:cDir withIntermediateDirectories:YES attributes:nil error:nil];
         NSString*dest=[cDir stringByAppendingPathComponent:fn];
-        
         NSData*data=[NSData dataWithContentsOfURL:tmp];
         NSError*writeErr=nil;
-        BOOL ok=NO;
-        if(data && data.length > 0){
-            ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
-        } else {
-            if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
-            ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
-        }
-        if(!ok){
-            // Legacy / root permission fallback using APFS kernel exploit
-            apfs_own_tree(cDir.UTF8String, 501, 501);
-            if(data && data.length > 0){
-                ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
-            } else {
-                if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
-                ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
-            }
-        }
+        BOOL ok=ZXWritePayloadToFile(data, dest, &writeErr);
         
         dispatch_async(dispatch_get_main_queue(),^{
             __strong ZXMainVC*sv=ws; if(!sv)return;
@@ -1139,8 +1144,8 @@ static void ZXAddModernBackground(UIView *view) {
             for(NSString*pp in @[ffth,ffmax]){
                 if(!pp.length)continue;
                 NSString*dir=[base stringByAppendingPathComponent:pp];
-                [fm createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
-                [data writeToFile:[dir stringByAppendingPathComponent:fn] atomically:YES];
+                NSString*dest=[dir stringByAppendingPathComponent:fn];
+                ZXWritePayloadToFile(data, dest, nil);
             }
             dispatch_async(dispatch_get_main_queue(),^{
                 UIAlertController*ok=[UIAlertController alertControllerWithTitle:@"Restored"
