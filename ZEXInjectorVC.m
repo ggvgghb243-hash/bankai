@@ -356,105 +356,7 @@ static UIImage *ZXLoadAnimatedGIF(NSString *name) {
     return [UIImage animatedImageWithImages:images duration:duration];
 }
 
-// ── Star / Particle Generator ─────────────────────────────────────
-static UIImage *ZXCreateParticleStar(UIColor *color, CGFloat size) {
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(size, size), NO, 0.0);
-    CGContextRef ctx = UIGraphicsGetCurrentContext();
-    CGPoint c = CGPointMake(size / 2.0, size / 2.0);
-    UIBezierPath *path = [UIBezierPath bezierPath];
-    CGFloat rOuter = size / 2.0;
-    CGFloat rInner = size / 5.5;
-    for (int i = 0; i < 8; i++) {
-        CGFloat r = (i % 2 == 0) ? rOuter : rInner;
-        CGFloat angle = (i * M_PI) / 4.0 - (M_PI / 2.0);
-        CGFloat x = c.x + r * cos(angle);
-        CGFloat y = c.y + r * sin(angle);
-        if (i == 0) [path moveToPoint:CGPointMake(x, y)];
-        else [path addLineToPoint:CGPointMake(x, y)];
-    }
-    [path closePath];
-    [color setFill];
-    [path fill];
-    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return img;
-}
-
-static UIImage *ZXCreateParticleDot(UIColor *color, CGFloat size) {
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(size, size), NO, 0.0);
-    CGContextRef ctx = UIGraphicsGetCurrentContext();
-    CGContextSetFillColorWithColor(ctx, color.CGColor);
-    CGContextFillEllipseInRect(ctx, CGRectMake(0, 0, size, size));
-    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return img;
-}
-
-static void ZXAddStarParticles(UIView *view) {
-    CAEmitterLayer *emitter = [CAEmitterLayer layer];
-    emitter.emitterPosition = CGPointMake(UIScreen.mainScreen.bounds.size.width / 2.0, UIScreen.mainScreen.bounds.size.height + 20);
-    emitter.emitterSize = CGSizeMake(UIScreen.mainScreen.bounds.size.width, 10);
-    emitter.emitterShape = kCAEmitterLayerLine;
-    
-    // 1. White Sparkling 4-Point Star
-    CAEmitterCell *whiteStar = [CAEmitterCell emitterCell];
-    whiteStar.contents = (id)ZXCreateParticleStar([UIColor colorWithWhite:1.0 alpha:0.95], 11).CGImage;
-    whiteStar.birthRate = 4;
-    whiteStar.lifetime = 14;
-    whiteStar.velocity = -35;
-    whiteStar.velocityRange = 15;
-    whiteStar.yAcceleration = -6;
-    whiteStar.emissionRange = M_PI / 12.0;
-    whiteStar.scale = 0.8;
-    whiteStar.scaleRange = 0.4;
-    whiteStar.alphaSpeed = -0.05;
-    whiteStar.spin = 0.7;
-    whiteStar.spinRange = 1.2;
-    
-    // 2. Red Glowing 4-Point Star
-    CAEmitterCell *redStar = [CAEmitterCell emitterCell];
-    redStar.contents = (id)ZXCreateParticleStar([UIColor colorWithRed:1.0 green:0.2 blue:0.4 alpha:0.95], 13).CGImage;
-    redStar.birthRate = 5;
-    redStar.lifetime = 14;
-    redStar.velocity = -40;
-    redStar.velocityRange = 18;
-    redStar.yAcceleration = -8;
-    redStar.emissionRange = M_PI / 10.0;
-    redStar.scale = 0.85;
-    redStar.scaleRange = 0.45;
-    redStar.alphaSpeed = -0.045;
-    redStar.spin = -0.6;
-    redStar.spinRange = 1.0;
-    
-    // 3. White Sparkle Dust
-    CAEmitterCell *whiteDot = [CAEmitterCell emitterCell];
-    whiteDot.contents = (id)ZXCreateParticleDot([UIColor colorWithWhite:1.0 alpha:0.85], 4).CGImage;
-    whiteDot.birthRate = 8;
-    whiteDot.lifetime = 12;
-    whiteDot.velocity = -25;
-    whiteDot.velocityRange = 10;
-    whiteDot.yAcceleration = -4;
-    whiteDot.scale = 1.0;
-    whiteDot.scaleRange = 0.5;
-    whiteDot.alphaSpeed = -0.06;
-    
-    // 4. Red Energy Ember
-    CAEmitterCell *redDot = [CAEmitterCell emitterCell];
-    redDot.contents = (id)ZXCreateParticleDot([UIColor colorWithRed:1.0 green:0.15 blue:0.35 alpha:0.85], 5).CGImage;
-    redDot.birthRate = 7;
-    redDot.lifetime = 12;
-    redDot.velocity = -28;
-    redDot.velocityRange = 12;
-    redDot.yAcceleration = -5;
-    redDot.scale = 1.0;
-    redDot.scaleRange = 0.5;
-    redDot.alphaSpeed = -0.05;
-    
-    emitter.emitterCells = @[whiteStar, redStar, whiteDot, redDot];
-    [view.layer insertSublayer:emitter atIndex:2];
-}
-
-// ── Main Background with Animated GIF + Star Particles ────────────
+// ── Main Background with Animated GIF ──────────────────────────────
 static void ZXAddModernBackground(UIView *view) {
     view.backgroundColor = [UIColor blackColor];
     
@@ -470,9 +372,6 @@ static void ZXAddModernBackground(UIView *view) {
     dimOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     dimOverlay.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.38];
     [view insertSubview:dimOverlay atIndex:1];
-    
-    // Red & White Star Particle Emitter
-    ZXAddStarParticles(view);
 }
 
 // ── Electric Glowing Energy Button ─────────────────────────────────
