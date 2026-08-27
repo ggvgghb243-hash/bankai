@@ -411,31 +411,6 @@ static void ZXApplyModernButton(UIButton *btn) {
     self.view.backgroundColor = [UIColor blackColor];
     ZXAddModernBackground(self.view);
     
-    // Top Animated GIF Logo Container
-    UIImageView *gifView = [UIImageView new];
-    gifView.translatesAutoresizingMaskIntoConstraints = NO;
-    gifView.contentMode = UIViewContentModeScaleAspectFit;
-    gifView.layer.cornerRadius = 24;
-    gifView.layer.masksToBounds = YES;
-    gifView.layer.borderWidth = 1.2;
-    gifView.layer.borderColor = [UIColor colorWithRed:0.95 green:0.15 blue:0.3 alpha:0.6].CGColor;
-    gifView.layer.shadowColor = ZXRed.CGColor;
-    gifView.layer.shadowRadius = 16;
-    gifView.layer.shadowOpacity = 0.6;
-    gifView.layer.shadowOffset = CGSizeZero;
-    gifView.image = ZXLoadAnimatedGIF(@"GIF by Chandelier Creative.gif");
-    [self.view addSubview:gifView];
-    
-    // Logo Title
-    UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
-    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
-    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,6)];
-    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(6,9)];
-    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:24 weight:UIFontWeightHeavy] range:NSMakeRange(0,15)];
-    [as addAttribute:NSKernAttributeName value:@2.0 range:NSMakeRange(0,15)];
-    logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
-    [self.view addSubview:logo];
-    
     // Security Badge
     UIView*badge=ZXGlassView(10);badge.translatesAutoresizingMaskIntoConstraints=NO;
     badge.backgroundColor=[UIColor colorWithRed:0.14 green:0.02 blue:0.04 alpha:0.85];
@@ -459,7 +434,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     _card = [UIView new];_card.translatesAutoresizingMaskIntoConstraints=NO;
     _card.backgroundColor = [UIColor colorWithRed:0.06 green:0.02 blue:0.035 alpha:0.92];
     _card.layer.cornerRadius = 18;
-    _card.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.1].CGColor;
+    _card.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.12].CGColor;
     _card.layer.borderWidth = 1.0;
     _card.layer.shadowColor = UIColor.blackColor.CGColor;
     _card.layer.shadowOffset = CGSizeMake(0, 10);
@@ -552,27 +527,25 @@ static void ZXApplyModernButton(UIButton *btn) {
     [self.view addSubview:foot];
     
     [NSLayoutConstraint activateConstraints:@[
-        [gifView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [gifView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-185],
-        [gifView.widthAnchor constraintEqualToConstant:78],
-        [gifView.heightAnchor constraintEqualToConstant:78],
+        [foot.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [foot.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-8],
         
-        [logo.topAnchor constraintEqualToAnchor:gifView.bottomAnchor constant:12],
-        [logo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [_msg.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [_msg.bottomAnchor constraintEqualToAnchor:foot.topAnchor constant:-8],
+        [_msg.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor],
+        [_msg.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor],
         
-        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:8],
-        [badge.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
-        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
-        [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
-        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
+        [_sp.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [_sp.centerYAnchor constraintEqualToAnchor:_msg.centerYAnchor],
         
-        [devInfo.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:8],
-        [devInfo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [_btn.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor],
+        [_btn.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor],
+        [_btn.bottomAnchor constraintEqualToAnchor:_msg.topAnchor constant:-10],
+        [_btn.heightAnchor constraintEqualToConstant:50],
         
         [_card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:22],
         [_card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-22],
-        [_card.topAnchor constraintEqualToAnchor:devInfo.bottomAnchor constant:14],
+        [_card.bottomAnchor constraintEqualToAnchor:_btn.topAnchor constant:-14],
         
         [lbl.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:16],
         [lbl.topAnchor constraintEqualToAnchor:_card.topAnchor constant:15],
@@ -605,21 +578,15 @@ static void ZXApplyModernButton(UIButton *btn) {
         [remSw.trailingAnchor constraintEqualToAnchor:remRow.trailingAnchor],
         [remSw.centerYAnchor constraintEqualToAnchor:remRow.centerYAnchor],
         
-        [_btn.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor],
-        [_btn.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor],
-        [_btn.topAnchor constraintEqualToAnchor:_card.bottomAnchor constant:16],
-        [_btn.heightAnchor constraintEqualToConstant:50],
+        [devInfo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [devInfo.bottomAnchor constraintEqualToAnchor:_card.topAnchor constant:-10],
         
-        [_msg.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [_msg.topAnchor constraintEqualToAnchor:_btn.bottomAnchor constant:12],
-        [_msg.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor],
-        [_msg.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor],
-        
-        [_sp.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [_sp.topAnchor constraintEqualToAnchor:_msg.bottomAnchor constant:6],
-        
-        [foot.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [foot.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-10],
+        [badge.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [badge.bottomAnchor constraintEqualToAnchor:devInfo.topAnchor constant:-8],
+        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
+        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
+        [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
+        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
     ]];
 }
 -(void)btnTouchDown{
@@ -1254,30 +1221,6 @@ static void ZXApplyModernButton(UIButton *btn) {
     loader.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     ZXAddModernBackground(loader);
     
-    // Center Animated GIF Logo
-    UIImageView *gifView = [UIImageView new];
-    gifView.translatesAutoresizingMaskIntoConstraints = NO;
-    gifView.contentMode = UIViewContentModeScaleAspectFit;
-    gifView.layer.cornerRadius = 24;
-    gifView.layer.masksToBounds = YES;
-    gifView.layer.borderWidth = 1.2;
-    gifView.layer.borderColor = [UIColor colorWithRed:0.95 green:0.15 blue:0.3 alpha:0.6].CGColor;
-    gifView.layer.shadowColor = ZXRed.CGColor;
-    gifView.layer.shadowRadius = 16;
-    gifView.layer.shadowOpacity = 0.6;
-    gifView.layer.shadowOffset = CGSizeZero;
-    gifView.image = ZXLoadAnimatedGIF(@"GIF by Chandelier Creative.gif");
-    [loader addSubview:gifView];
-    
-    UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
-    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
-    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,6)];
-    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(6,9)];
-    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:24 weight:UIFontWeightHeavy] range:NSMakeRange(0,15)];
-    [as addAttribute:NSKernAttributeName value:@2.0 range:NSMakeRange(0,15)];
-    logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
-    [loader addSubview:logo];
-    
     UIView*badge=ZXGlassView(10);badge.translatesAutoresizingMaskIntoConstraints=NO;
     badge.backgroundColor=[UIColor colorWithRed:0.14 green:0.02 blue:0.04 alpha:0.85];
     badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.45].CGColor;
@@ -1325,15 +1268,18 @@ static void ZXApplyModernButton(UIButton *btn) {
     NSLayoutConstraint*pWidth=[pBar.widthAnchor constraintEqualToConstant:20];
     
     [NSLayoutConstraint activateConstraints:@[
-        [gifView.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [gifView.centerYAnchor constraintEqualToAnchor:loader.centerYAnchor constant:-85],
-        [gifView.widthAnchor constraintEqualToConstant:78],
-        [gifView.heightAnchor constraintEqualToConstant:78],
+        [pTrack.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
+        [pTrack.bottomAnchor constraintEqualToAnchor:loader.safeAreaLayoutGuide.bottomAnchor constant:-45],
+        [pTrack.widthAnchor constraintEqualToConstant:220],
+        [pTrack.heightAnchor constraintEqualToConstant:7],
         
-        [logo.topAnchor constraintEqualToAnchor:gifView.bottomAnchor constant:12],
-        [logo.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
+        [sub.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
+        [sub.bottomAnchor constraintEqualToAnchor:pTrack.topAnchor constant:-14],
         
-        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:10],
+        [devLoad.bottomAnchor constraintEqualToAnchor:sub.topAnchor constant:-10],
+        [devLoad.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
+        
+        [badge.bottomAnchor constraintEqualToAnchor:devLoad.topAnchor constant:-10],
         [badge.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
         [dot.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
         [dot.centerYAnchor constraintEqualToAnchor:badge.centerYAnchor],
@@ -1343,17 +1289,6 @@ static void ZXApplyModernButton(UIButton *btn) {
         [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
         [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
         [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
-        
-        [devLoad.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:8],
-        [devLoad.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        
-        [sub.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [sub.topAnchor constraintEqualToAnchor:devLoad.bottomAnchor constant:14],
-        
-        [pTrack.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [pTrack.topAnchor constraintEqualToAnchor:sub.bottomAnchor constant:16],
-        [pTrack.widthAnchor constraintEqualToConstant:200],
-        [pTrack.heightAnchor constraintEqualToConstant:7],
         
         [pBar.leadingAnchor constraintEqualToAnchor:pTrack.leadingAnchor],
         [pBar.topAnchor constraintEqualToAnchor:pTrack.topAnchor],
