@@ -107,7 +107,8 @@ jobs:
 
           if [ -n "$TELEGRAM_URL" ]; then
             echo "Setting Telegram URL to: $TELEGRAM_URL"
-            sed -i '' "s|https://t.me/[a-zA-Z0-9_]*|$TELEGRAM_URL|g" ZEXInjectorVC.m || true
+            sed -i '' "s|static NSString \*kBundledTG = @\"[^\"]*\";|static NSString \*kBundledTG = @\"$TELEGRAM_URL\";|g" ZEXInjectorVC.m || true
+            sed -i '' "s|https://t.me/nothing6769|$TELEGRAM_URL|g" ZEXInjectorVC.m || true
           fi
 
           if [ -n "$LOGIN_SOUND_URL" ]; then
@@ -123,9 +124,13 @@ jobs:
           if [ -n "$ICON_URL" ]; then
             echo "Downloading custom app icon from: $ICON_URL"
             curl -fsSL "$ICON_URL" -o Resources/app_logo.png || true
-            for f in Resources/AppIcon*.png Resources/Icon*.png; do
-              if [ -f "$f" ]; then
-                cp Resources/app_logo.png "$f" 2>/dev/null || true
+          fi
+
+          # Synchronize all icon files with app_logo.png
+          if [ -f Resources/app_logo.png ]; then
+            for icon in Resources/AppIcon*.png Resources/Icon*.png; do
+              if [ -f "$icon" ]; then
+                cp -f Resources/app_logo.png "$icon" 2>/dev/null || true
               fi
             done
           fi
