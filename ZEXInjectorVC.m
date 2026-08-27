@@ -1210,10 +1210,16 @@ static void ZXAddModernBackground(UIView *view) {
 -(void)buildUI{
     // Header
     UILabel*brand=[UILabel new];brand.translatesAutoresizingMaskIntoConstraints=NO;
-    NSMutableAttributedString*bas=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
-    [bas addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,6)];
-    [bas addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(6,9)];
-    [bas addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:22 weight:UIFontWeightHeavy] range:NSMakeRange(0,15)];
+    NSString *headerTitle = @"BANKAI EXTERNAL";
+    NSArray *parts = [headerTitle componentsSeparatedByString:@" "];
+    NSString *p1 = parts.firstObject ?: headerTitle;
+    NSString *p2 = parts.count > 1 ? [headerTitle substringFromIndex:p1.length] : @"";
+    NSMutableAttributedString*bas=[[NSMutableAttributedString alloc]initWithString:headerTitle];
+    [bas addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0, p1.length)];
+    if (p2.length > 0) {
+        [bas addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(p1.length, p2.length)];
+    }
+    [bas addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:22 weight:UIFontWeightHeavy] range:NSMakeRange(0, headerTitle.length)];
     brand.attributedText=bas;[self.view addSubview:brand];
     UIView*pill=ZXGlassView(11);pill.translatesAutoresizingMaskIntoConstraints=NO;
     pill.layer.borderColor=ZXRed.CGColor;ZXRedGlow(pill,5);[self.view addSubview:pill];
