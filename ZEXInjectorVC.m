@@ -356,7 +356,105 @@ static UIImage *ZXLoadAnimatedGIF(NSString *name) {
     return [UIImage animatedImageWithImages:images duration:duration];
 }
 
-// ── Main Background with Animated GIF ──────────────────────────────
+// ── Star / Particle Generator ─────────────────────────────────────
+static UIImage *ZXCreateParticleStar(UIColor *color, CGFloat size) {
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(size, size), NO, 0.0);
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    CGPoint c = CGPointMake(size / 2.0, size / 2.0);
+    UIBezierPath *path = [UIBezierPath bezierPath];
+    CGFloat rOuter = size / 2.0;
+    CGFloat rInner = size / 5.5;
+    for (int i = 0; i < 8; i++) {
+        CGFloat r = (i % 2 == 0) ? rOuter : rInner;
+        CGFloat angle = (i * M_PI) / 4.0 - (M_PI / 2.0);
+        CGFloat x = c.x + r * cos(angle);
+        CGFloat y = c.y + r * sin(angle);
+        if (i == 0) [path moveToPoint:CGPointMake(x, y)];
+        else [path addLineToPoint:CGPointMake(x, y)];
+    }
+    [path closePath];
+    [color setFill];
+    [path fill];
+    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return img;
+}
+
+static UIImage *ZXCreateParticleDot(UIColor *color, CGFloat size) {
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(size, size), NO, 0.0);
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(ctx, color.CGColor);
+    CGContextFillEllipseInRect(ctx, CGRectMake(0, 0, size, size));
+    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return img;
+}
+
+static void ZXAddStarParticles(UIView *view) {
+    CAEmitterLayer *emitter = [CAEmitterLayer layer];
+    emitter.emitterPosition = CGPointMake(UIScreen.mainScreen.bounds.size.width / 2.0, UIScreen.mainScreen.bounds.size.height + 20);
+    emitter.emitterSize = CGSizeMake(UIScreen.mainScreen.bounds.size.width, 10);
+    emitter.emitterShape = kCAEmitterLayerLine;
+    
+    // 1. White Sparkling 4-Point Star
+    CAEmitterCell *whiteStar = [CAEmitterCell emitterCell];
+    whiteStar.contents = (id)ZXCreateParticleStar([UIColor colorWithWhite:1.0 alpha:0.95], 11).CGImage;
+    whiteStar.birthRate = 4;
+    whiteStar.lifetime = 14;
+    whiteStar.velocity = -35;
+    whiteStar.velocityRange = 15;
+    whiteStar.yAcceleration = -6;
+    whiteStar.emissionRange = M_PI / 12.0;
+    whiteStar.scale = 0.8;
+    whiteStar.scaleRange = 0.4;
+    whiteStar.alphaSpeed = -0.05;
+    whiteStar.spin = 0.7;
+    whiteStar.spinRange = 1.2;
+    
+    // 2. Red Glowing 4-Point Star
+    CAEmitterCell *redStar = [CAEmitterCell emitterCell];
+    redStar.contents = (id)ZXCreateParticleStar([UIColor colorWithRed:1.0 green:0.2 blue:0.4 alpha:0.95], 13).CGImage;
+    redStar.birthRate = 5;
+    redStar.lifetime = 14;
+    redStar.velocity = -40;
+    redStar.velocityRange = 18;
+    redStar.yAcceleration = -8;
+    redStar.emissionRange = M_PI / 10.0;
+    redStar.scale = 0.85;
+    redStar.scaleRange = 0.45;
+    redStar.alphaSpeed = -0.045;
+    redStar.spin = -0.6;
+    redStar.spinRange = 1.0;
+    
+    // 3. White Sparkle Dust
+    CAEmitterCell *whiteDot = [CAEmitterCell emitterCell];
+    whiteDot.contents = (id)ZXCreateParticleDot([UIColor colorWithWhite:1.0 alpha:0.85], 4).CGImage;
+    whiteDot.birthRate = 8;
+    whiteDot.lifetime = 12;
+    whiteDot.velocity = -25;
+    whiteDot.velocityRange = 10;
+    whiteDot.yAcceleration = -4;
+    whiteDot.scale = 1.0;
+    whiteDot.scaleRange = 0.5;
+    whiteDot.alphaSpeed = -0.06;
+    
+    // 4. Red Energy Ember
+    CAEmitterCell *redDot = [CAEmitterCell emitterCell];
+    redDot.contents = (id)ZXCreateParticleDot([UIColor colorWithRed:1.0 green:0.15 blue:0.35 alpha:0.85], 5).CGImage;
+    redDot.birthRate = 7;
+    redDot.lifetime = 12;
+    redDot.velocity = -28;
+    redDot.velocityRange = 12;
+    redDot.yAcceleration = -5;
+    redDot.scale = 1.0;
+    redDot.scaleRange = 0.5;
+    redDot.alphaSpeed = -0.05;
+    
+    emitter.emitterCells = @[whiteStar, redStar, whiteDot, redDot];
+    [view.layer insertSublayer:emitter atIndex:2];
+}
+
+// ── Main Background with Animated GIF + Star Particles ────────────
 static void ZXAddModernBackground(UIView *view) {
     view.backgroundColor = [UIColor blackColor];
     
@@ -372,26 +470,42 @@ static void ZXAddModernBackground(UIView *view) {
     dimOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     dimOverlay.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.38];
     [view insertSubview:dimOverlay atIndex:1];
+    
+    // Red & White Star Particle Emitter
+    ZXAddStarParticles(view);
 }
 
+// ── Electric Glowing Energy Button ─────────────────────────────────
 static void ZXApplyModernButton(UIButton *btn) {
-    btn.layer.cornerRadius = 16;
+    btn.layer.cornerRadius = 24;
     btn.layer.masksToBounds = NO;
-    btn.layer.shadowColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:1.0].CGColor;
-    btn.layer.shadowOffset = CGSizeMake(0, 5);
-    btn.layer.shadowRadius = 14;
-    btn.layer.shadowOpacity = 0.55;
+    btn.layer.borderWidth = 1.8;
+    btn.layer.borderColor = [UIColor colorWithRed:1.0 green:0.25 blue:0.45 alpha:0.95].CGColor;
+    btn.layer.shadowColor = [UIColor colorWithRed:1.0 green:0.12 blue:0.38 alpha:1.0].CGColor;
+    btn.layer.shadowOffset = CGSizeZero;
+    btn.layer.shadowRadius = 16;
+    btn.layer.shadowOpacity = 0.85;
+    btn.backgroundColor = [UIColor colorWithRed:0.20 green:0.02 blue:0.06 alpha:0.92];
     
     CAGradientLayer *btnGrad = [CAGradientLayer layer];
     btnGrad.frame = CGRectMake(0, 0, 420, 52);
     btnGrad.colors = @[
-        (id)[UIColor colorWithRed:0.95 green:0.14 blue:0.32 alpha:1.0].CGColor,
-        (id)[UIColor colorWithRed:0.72 green:0.04 blue:0.18 alpha:1.0].CGColor
+        (id)[UIColor colorWithRed:0.32 green:0.04 blue:0.10 alpha:0.92].CGColor,
+        (id)[UIColor colorWithRed:0.14 green:0.01 blue:0.04 alpha:0.92].CGColor
     ];
     btnGrad.startPoint = CGPointMake(0, 0);
     btnGrad.endPoint = CGPointMake(1, 1);
-    btnGrad.cornerRadius = 16;
+    btnGrad.cornerRadius = 24;
     [btn.layer insertSublayer:btnGrad atIndex:0];
+    
+    // Pulsing aura animation
+    CABasicAnimation *pulse = [CABasicAnimation animationWithKeyPath:@"shadowOpacity"];
+    pulse.fromValue = @(0.65);
+    pulse.toValue = @(1.0);
+    pulse.duration = 1.2;
+    pulse.autoreverses = YES;
+    pulse.repeatCount = HUGE_VALF;
+    [btn.layer addAnimation:pulse forKey:@"btn_pulse_glow"];
 }
 
 // ── ZXAuthVC (Sleek Modern Login Screen) ───────────────────────────
@@ -501,12 +615,12 @@ static void ZXApplyModernButton(UIButton *btn) {
     [remRow addSubview:remSw];
     
     _btn=[UIButton buttonWithType:UIButtonTypeSystem];_btn.translatesAutoresizingMaskIntoConstraints=NO;
-    NSMutableAttributedString *btnTitle = [[NSMutableAttributedString alloc] initWithString:@"⚡ AUTHENTICATE & ENTER"];
-    [btnTitle addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(0, btnTitle.length)];
+    NSMutableAttributedString *btnTitle = [[NSMutableAttributedString alloc] initWithString:@"⚡  AUTHENTICATE & ENTER"];
+    [btnTitle addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithRed:1.0 green:0.88 blue:0.25 alpha:1.0] range:NSMakeRange(0, 2)];
+    [btnTitle addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(2, btnTitle.length - 2)];
     [btnTitle addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:14.5 weight:UIFontWeightHeavy] range:NSMakeRange(0, btnTitle.length)];
-    [btnTitle addAttribute:NSKernAttributeName value:@1.2 range:NSMakeRange(0, btnTitle.length)];
+    [btnTitle addAttribute:NSKernAttributeName value:@1.3 range:NSMakeRange(0, btnTitle.length)];
     [_btn setAttributedTitle:btnTitle forState:UIControlStateNormal];
-    _btn.backgroundColor=ZXRed;_btn.layer.cornerRadius=16;
     [_btn addTarget:self action:@selector(btnTouchDown) forControlEvents:UIControlEventTouchDown];
     [_btn addTarget:self action:@selector(btnTouchUp) forControlEvents:UIControlEventTouchUpInside|UIControlEventTouchUpOutside|UIControlEventTouchCancel];
     [_btn addTarget:self action:@selector(activate) forControlEvents:UIControlEventTouchUpInside];
@@ -520,18 +634,30 @@ static void ZXApplyModernButton(UIButton *btn) {
     _sp=[[UIActivityIndicatorView alloc]initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
     _sp.translatesAutoresizingMaskIntoConstraints=NO;_sp.color=ZXRed;_sp.hidesWhenStopped=YES;[self.view addSubview:_sp];
     
-    UILabel*foot=[UILabel new];foot.translatesAutoresizingMaskIntoConstraints=NO;
-    foot.text=@"STATUS: ENCRYPTED • TLS-AES256 • 1-DEVICE SECURE";
-    foot.font=[UIFont monospacedSystemFontOfSize:8.5 weight:UIFontWeightBold];
-    foot.textColor=[UIColor colorWithWhite:1 alpha:0.3];foot.textAlignment=NSTextAlignmentCenter;
-    [self.view addSubview:foot];
+    // Bottom Security Capsule
+    UIView*footCapsule=ZXGlassView(14);footCapsule.translatesAutoresizingMaskIntoConstraints=NO;
+    footCapsule.backgroundColor=[UIColor colorWithRed:0.08 green:0.02 blue:0.04 alpha:0.8];
+    footCapsule.layer.cornerRadius=14;footCapsule.layer.borderColor=[UIColor colorWithWhite:1 alpha:0.1].CGColor;
+    footCapsule.layer.borderWidth=0.8;[self.view addSubview:footCapsule];
     
+    UILabel*foot=[UILabel new];foot.translatesAutoresizingMaskIntoConstraints=NO;
+    foot.text=@"STATUS: ENCRYPTED  •  TLS-AES256  •  1-DEVICE SECURE";
+    foot.font=[UIFont monospacedSystemFontOfSize:8.5 weight:UIFontWeightBold];
+    foot.textColor=[UIColor colorWithWhite:1 alpha:0.5];foot.textAlignment=NSTextAlignmentCenter;
+    [footCapsule addSubview:foot];
+    
+    // Half Inch (~48pt) Higher Up from Bottom
     [NSLayoutConstraint activateConstraints:@[
-        [foot.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [foot.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-8],
+        [footCapsule.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [footCapsule.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-48],
+        [foot.centerXAnchor constraintEqualToAnchor:footCapsule.centerXAnchor],
+        [foot.centerYAnchor constraintEqualToAnchor:footCapsule.centerYAnchor],
+        [foot.leadingAnchor constraintEqualToAnchor:footCapsule.leadingAnchor constant:14],
+        [foot.trailingAnchor constraintEqualToAnchor:footCapsule.trailingAnchor constant:-14],
+        [footCapsule.heightAnchor constraintEqualToConstant:28],
         
         [_msg.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [_msg.bottomAnchor constraintEqualToAnchor:foot.topAnchor constant:-8],
+        [_msg.bottomAnchor constraintEqualToAnchor:footCapsule.topAnchor constant:-8],
         [_msg.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor],
         [_msg.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor],
         
