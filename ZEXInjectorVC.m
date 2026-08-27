@@ -374,38 +374,45 @@ static void ZXAddModernBackground(UIView *view) {
     [view insertSubview:dimOverlay atIndex:1];
 }
 
-// ── Electric Glowing Energy Button ─────────────────────────────────
-static void ZXApplyModernButton(UIButton *btn) {
-    btn.layer.cornerRadius = 24;
-    btn.layer.masksToBounds = NO;
-    btn.layer.borderWidth = 1.8;
-    btn.layer.borderColor = [UIColor colorWithRed:1.0 green:0.25 blue:0.45 alpha:0.95].CGColor;
-    btn.layer.shadowColor = [UIColor colorWithRed:1.0 green:0.12 blue:0.38 alpha:1.0].CGColor;
-    btn.layer.shadowOffset = CGSizeZero;
-    btn.layer.shadowRadius = 16;
-    btn.layer.shadowOpacity = 0.85;
-    btn.backgroundColor = [UIColor colorWithRed:0.20 green:0.02 blue:0.06 alpha:0.92];
-    
-    CAGradientLayer *btnGrad = [CAGradientLayer layer];
-    btnGrad.frame = CGRectMake(0, 0, 420, 52);
-    btnGrad.colors = @[
-        (id)[UIColor colorWithRed:0.32 green:0.04 blue:0.10 alpha:0.92].CGColor,
-        (id)[UIColor colorWithRed:0.14 green:0.01 blue:0.04 alpha:0.92].CGColor
-    ];
-    btnGrad.startPoint = CGPointMake(0, 0);
-    btnGrad.endPoint = CGPointMake(1, 1);
-    btnGrad.cornerRadius = 24;
-    [btn.layer insertSublayer:btnGrad atIndex:0];
-    
-    // Pulsing aura animation
-    CABasicAnimation *pulse = [CABasicAnimation animationWithKeyPath:@"shadowOpacity"];
-    pulse.fromValue = @(0.65);
-    pulse.toValue = @(1.0);
-    pulse.duration = 1.2;
-    pulse.autoreverses = YES;
-    pulse.repeatCount = HUGE_VALF;
-    [btn.layer addAnimation:pulse forKey:@"btn_pulse_glow"];
+// ── Responsive Glowing Auth Button ─────────────────────────────────
+@interface ZXModernAuthButton : UIButton
+@property (nonatomic, strong) CAGradientLayer *gradLayer;
+@end
+@implementation ZXModernAuthButton
+- (instancetype)initWithFrame:(CGRect)frame {
+    if (self = [super initWithFrame:frame]) {
+        self.translatesAutoresizingMaskIntoConstraints = NO;
+        self.layer.cornerRadius = 25;
+        self.layer.masksToBounds = NO;
+        self.layer.borderWidth = 1.6;
+        self.layer.borderColor = [UIColor colorWithRed:1.0 green:0.25 blue:0.45 alpha:0.95].CGColor;
+        self.layer.shadowColor = [UIColor colorWithRed:1.0 green:0.12 blue:0.35 alpha:1.0].CGColor;
+        self.layer.shadowOffset = CGSizeZero;
+        self.layer.shadowRadius = 14;
+        self.layer.shadowOpacity = 0.85;
+        self.backgroundColor = [UIColor colorWithRed:0.22 green:0.02 blue:0.06 alpha:0.95];
+        
+        _gradLayer = [CAGradientLayer layer];
+        _gradLayer.colors = @[
+            (id)[UIColor colorWithRed:0.88 green:0.12 blue:0.28 alpha:0.95].CGColor,
+            (id)[UIColor colorWithRed:0.50 green:0.03 blue:0.14 alpha:0.95].CGColor
+        ];
+        _gradLayer.startPoint = CGPointMake(0, 0);
+        _gradLayer.endPoint = CGPointMake(1, 1);
+        _gradLayer.cornerRadius = 25;
+        _gradLayer.masksToBounds = YES;
+        [self.layer insertSublayer:_gradLayer atIndex:0];
+    }
+    return self;
 }
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    _gradLayer.frame = self.bounds;
+    CGFloat r = self.bounds.size.height > 0 ? self.bounds.size.height / 2.0 : 25;
+    _gradLayer.cornerRadius = r;
+    self.layer.cornerRadius = r;
+}
+@end
 
 // ── ZXAuthVC (Sleek Modern Login Screen) ───────────────────────────
 @interface ZXAuthVC : UIViewController
@@ -414,7 +421,7 @@ static void ZXApplyModernButton(UIButton *btn) {
 @implementation ZXAuthVC{
     UITextField*_f;
     UILabel*_msg;
-    UIButton*_btn;
+    ZXModernAuthButton*_btn;
     UIActivityIndicatorView*_sp;
     UIView*_card;
 }
@@ -424,13 +431,13 @@ static void ZXApplyModernButton(UIButton *btn) {
     self.view.backgroundColor = [UIColor blackColor];
     ZXAddModernBackground(self.view);
     
-    // Security Badge
+    // Top Badge with BANKAI EXTERNAL
     UIView*badge=ZXGlassView(10);badge.translatesAutoresizingMaskIntoConstraints=NO;
     badge.backgroundColor=[UIColor colorWithRed:0.14 green:0.02 blue:0.04 alpha:0.85];
     badge.layer.cornerRadius=10;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.45].CGColor;
     badge.layer.borderWidth=0.8;[self.view addSubview:badge];
     UILabel*badgeLbl=[UILabel new];badgeLbl.translatesAutoresizingMaskIntoConstraints=NO;
-    badgeLbl.text=@"🔒 LICENSE AUTHENTICATION";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
+    badgeLbl.text=@"BANKAI EXTERNAL";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9.5 weight:UIFontWeightHeavy];
     badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.4 blue:0.55 alpha:1.0];[badge addSubview:badgeLbl];
     
     // Device Spec Pill
@@ -513,7 +520,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     remSw.tag = 888;
     [remRow addSubview:remSw];
     
-    _btn=[UIButton buttonWithType:UIButtonTypeSystem];_btn.translatesAutoresizingMaskIntoConstraints=NO;
+    _btn=[ZXModernAuthButton new];
     NSMutableAttributedString *btnTitle = [[NSMutableAttributedString alloc] initWithString:@"⚡  AUTHENTICATE & ENTER"];
     [btnTitle addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithRed:1.0 green:0.88 blue:0.25 alpha:1.0] range:NSMakeRange(0, 2)];
     [btnTitle addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(2, btnTitle.length - 2)];
@@ -524,7 +531,6 @@ static void ZXApplyModernButton(UIButton *btn) {
     [_btn addTarget:self action:@selector(btnTouchUp) forControlEvents:UIControlEventTouchUpInside|UIControlEventTouchUpOutside|UIControlEventTouchCancel];
     [_btn addTarget:self action:@selector(activate) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_btn];
-    ZXApplyModernButton(_btn);
     
     _msg=[UILabel new];_msg.translatesAutoresizingMaskIntoConstraints=NO;
     _msg.textAlignment=NSTextAlignmentCenter;_msg.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
