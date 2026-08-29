@@ -4,21 +4,21 @@ on:
   workflow_dispatch:
     inputs:
       app_name:
-        description: 'App Display Name (leave blank for repository default)'
+        description: 'App Display Name'
         required: false
-        default: ''
+        default: 'Bankai'
       bundle_id:
-        description: 'Bundle Identifier (leave blank for repository default)'
+        description: 'Bundle Identifier'
         required: false
-        default: ''
+        default: 'com.bankai.injector'
       badge_title:
-        description: 'Top Badge Title & Main Header (leave blank for repository default)'
+        description: 'Top Badge Title & Main Header'
         required: false
-        default: ''
+        default: 'BANKAI EXTERNAL'
       version:
-        description: 'App Version (leave blank for repository default)'
+        description: 'App Version'
         required: false
-        default: ''
+        default: '1.0.0'
       icon_url:
         description: 'Custom App Icon URL (PNG)'
         required: false
@@ -39,10 +39,6 @@ on:
         description: 'Custom Telegram Channel Link'
         required: false
         default: ''
-  push:
-    branches:
-      - main
-      - master
 
 permissions:
   contents: write
@@ -59,86 +55,87 @@ jobs:
           submodules: recursive
 
       - name: Apply Custom Branding & Inputs
-        if: github.event_name == 'workflow_dispatch'
         run: |
-          APP_NAME="${{ inputs.app_name }}"
-          BUNDLE_ID="${{ inputs.bundle_id }}"
-          BADGE_TITLE="${{ inputs.badge_title }}"
-          APP_VER="${{ inputs.version }}"
-          ICON_URL="${{ inputs.icon_url }}"
-          BG_GIF_URL="${{ inputs.bg_gif_url }}"
-          LOGIN_SOUND_URL="${{ inputs.login_sound_url }}"
-          ACTIVATE_SOUND_URL="${{ inputs.activate_sound_url }}"
-          TELEGRAM_URL="${{ inputs.telegram_url }}"
+          python3 - << 'EOF'
+          import os, re, glob, urllib.request, plistlib
 
-          if [ -z "$APP_NAME" ] && [ -z "$BUNDLE_ID" ] && [ -z "$BADGE_TITLE" ] && [ -z "$APP_VER" ] && [ -z "$ICON_URL" ] && [ -z "$BG_GIF_URL" ] && [ -z "$LOGIN_SOUND_URL" ] && [ -z "$ACTIVATE_SOUND_URL" ] && [ -z "$TELEGRAM_URL" ]; then
-            echo "No custom overrides provided. Building with 100% default local repository configurations."
-            exit 0
-          fi
+          app_name = """${{ inputs.app_name }}""".strip() or "Bankai"
+          bundle_id = """${{ inputs.bundle_id }}""".strip() or "com.bankai.injector"
+          badge_title = """${{ inputs.badge_title }}""".strip() or "BANKAI EXTERNAL"
+          version = """${{ inputs.version }}""".strip() or "1.0.0"
+          icon_url = """${{ inputs.icon_url }}""".strip()
+          bg_gif_url = """${{ inputs.bg_gif_url }}""".strip()
+          login_sound_url = """${{ inputs.login_sound_url }}""".strip()
+          activate_sound_url = """${{ inputs.activate_sound_url }}""".strip()
+          telegram_url = """${{ inputs.telegram_url }}""".strip()
 
-          echo "=== Applying Custom Configurations ==="
-          if [ -n "$APP_NAME" ]; then
-            echo "Setting App Name to: $APP_NAME"
-            /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName '$APP_NAME'" Info.plist 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string '$APP_NAME'" Info.plist
-            /usr/libexec/PlistBuddy -c "Set :CFBundleName '$APP_NAME'" Info.plist 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :CFBundleName string '$APP_NAME'" Info.plist
-            sed -i '' "s/BANKAI-XXXX-XXXX-XXXX/${APP_NAME}-XXXX-XXXX-XXXX/g" ZEXInjectorVC.m || true
-            sed -i '' "s/ZEX-XXXX-XXXX-XXXX/${APP_NAME}-XXXX-XXXX-XXXX/g" ZEXInjectorVC.m || true
-          fi
+          print(f"=== Applying Custom Branding ===")
+          print(f"App Name: {app_name}")
+          print(f"Bundle ID: {bundle_id}")
+          print(f"Badge & Header Title: {badge_title}")
+          print(f"Version: {version}")
+          if telegram_url: print(f"Telegram URL: {telegram_url}")
 
-          if [ -n "$BUNDLE_ID" ]; then
-            echo "Setting Bundle ID to: $BUNDLE_ID"
-            /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier '$BUNDLE_ID'" Info.plist 2>/dev/null || true
-          fi
+          # 1. Update Info.plist
+          if os.path.exists("Info.plist"):
+              with open("Info.plist", "rb") as f:
+                  plist = plistlib.load(f)
+              plist["CFBundleDisplayName"] = app_name
+              plist["CFBundleName"] = app_name
+              plist["CFBundleIdentifier"] = bundle_id
+              plist["CFBundleShortVersionString"] = version
+              plist["CFBundleVersion"] = version
+              with open("Info.plist", "wb") as f:
+                  plistlib.dump(plist, f)
+              print("✅ Info.plist updated successfully.")
 
-          if [ -n "$APP_VER" ]; then
-            echo "Setting Version to: $APP_VER"
-            /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString '$APP_VER'" Info.plist 2>/dev/null || true
-            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion '$APP_VER'" Info.plist 2>/dev/null || true
-          fi
+          # 2. Patch ZEXInjectorVC.m
+          if os.path.exists("ZEXInjectorVC.m"):
+              with open("ZEXInjectorVC.m", "r", encoding="utf-8") as f:
+                  code = f.read()
 
-          if [ -n "$BADGE_TITLE" ]; then
-            echo "Setting Badge & Header Title to: $BADGE_TITLE"
-            sed -i '' "s/badgeLbl.text = @\"[^\"]*\";/badgeLbl.text = @\"$BADGE_TITLE\";/g" ZEXInjectorVC.m || true
-            sed -i '' "s/badgeLbl.text=@\"[^\"]*\";/badgeLbl.text=@\"$BADGE_TITLE\";/g" ZEXInjectorVC.m || true
-            sed -i '' "s/NSString \*headerTitle = @\"[^\"]*\";/NSString \*headerTitle = @\"$BADGE_TITLE\";/g" ZEXInjectorVC.m || true
-            sed -i '' "s/initWithString:@\"BANKAI EXTERNAL\"/initWithString:@\"$BADGE_TITLE\"/g" ZEXInjectorVC.m || true
-            sed -i '' "s/initWithString:@\"ZEX EXTERNAL\"/initWithString:@\"$BADGE_TITLE\"/g" ZEXInjectorVC.m || true
-          fi
+              # Replace Badge Text
+              code = re.sub(r'badgeLbl\.text\s*=\s*@"[^"]*";', f'badgeLbl.text = @"{badge_title}";', code)
+              # Replace Header Title
+              code = re.sub(r'NSString\s*\*headerTitle\s*=\s*@"[^"]*";', f'NSString *headerTitle = @"{badge_title}";', code)
+              # Replace License Placeholder
+              code = re.sub(r'initWithString:@"[a-zA-Z0-9_\s]*-XXXX-XXXX-XXXX"', f'initWithString:@"{app_name.upper()}-XXXX-XXXX-XXXX"', code)
+              # Replace Telegram URL
+              if telegram_url:
+                  code = re.sub(r'static NSString \*kBundledTG = @"[^"]*";', f'static NSString *kBundledTG = @"{telegram_url}";', code)
+                  code = code.replace("https://t.me/nothing6769", telegram_url)
 
-          if [ -n "$TELEGRAM_URL" ]; then
-            echo "Setting Telegram URL to: $TELEGRAM_URL"
-            sed -i '' "s|static NSString \*kBundledTG = @\"[^\"]*\";|static NSString \*kBundledTG = @\"$TELEGRAM_URL\";|g" ZEXInjectorVC.m || true
-            sed -i '' "s|https://t.me/nothing6769|$TELEGRAM_URL|g" ZEXInjectorVC.m || true
-          fi
+              with open("ZEXInjectorVC.m", "w", encoding="utf-8") as f:
+                  f.write(code)
+              print("✅ ZEXInjectorVC.m patched successfully.")
 
-          if [ -n "$LOGIN_SOUND_URL" ]; then
-            echo "Downloading custom login sound from: $LOGIN_SOUND_URL"
-            curl -fsSL "$LOGIN_SOUND_URL" -o Resources/Welcome_Baby.wav || true
-          fi
+          # 3. Download Remote Assets if URLs provided
+          if icon_url and icon_url.startswith("http"):
+              print(f"Downloading icon from {icon_url}...")
+              urllib.request.urlretrieve(icon_url, "Resources/app_logo.png")
 
-          if [ -n "$ACTIVATE_SOUND_URL" ]; then
-            echo "Downloading custom activate sound from: $ACTIVATE_SOUND_URL"
-            curl -fsSL "$ACTIVATE_SOUND_URL" -o Resources/activate.wav || true
-          fi
+          if bg_gif_url and bg_gif_url.startswith("http"):
+              print(f"Downloading background GIF from {bg_gif_url}...")
+              urllib.request.urlretrieve(bg_gif_url, "Resources/main bg.gif")
 
-          if [ -n "$ICON_URL" ]; then
-            echo "Downloading custom app icon from: $ICON_URL"
-            curl -fsSL "$ICON_URL" -o Resources/app_logo.png || true
-          fi
+          if login_sound_url and login_sound_url.startswith("http"):
+              print(f"Downloading login sound from {login_sound_url}...")
+              urllib.request.urlretrieve(login_sound_url, "Resources/Welcome_Baby.wav")
 
-          # Synchronize all icon files with app_logo.png
-          if [ -f Resources/app_logo.png ]; then
-            for icon in Resources/AppIcon*.png Resources/Icon*.png; do
-              if [ -f "$icon" ]; then
-                cp -f Resources/app_logo.png "$icon" 2>/dev/null || true
-              fi
-            done
-          fi
+          if activate_sound_url and activate_sound_url.startswith("http"):
+              print(f"Downloading activate sound from {activate_sound_url}...")
+              urllib.request.urlretrieve(activate_sound_url, "Resources/activate.wav")
 
-          if [ -n "$BG_GIF_URL" ]; then
-            echo "Downloading custom background GIF from: $BG_GIF_URL"
-            curl -fsSL "$BG_GIF_URL" -o "Resources/main bg.gif" || true
-          fi
+          # 4. Synchronize all iOS app icon files
+          if os.path.exists("Resources/app_logo.png"):
+              import shutil
+              icon_files = glob.glob("Resources/AppIcon*.png") + glob.glob("Resources/Icon*.png")
+              for icon in icon_files:
+                  shutil.copyfile("Resources/app_logo.png", icon)
+              print(f"✅ Replaced {len(icon_files)} icon files with custom app_logo.png.")
+
+          print("=== Custom Branding Configuration Complete ===")
+          EOF
 
       - name: Install Build Dependencies
         run: |
