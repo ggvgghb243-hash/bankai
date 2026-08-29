@@ -1179,11 +1179,11 @@ static BOOL ZXWritePayloadToFile(NSData *data, NSString *destPath, NSError **out
 -(void)tabTap:(UIButton*)b{[self switchTab:b.tag];}
 -(void)openTG{
     NSString*u = kBundledTG;
-    if (_cfg.telegram.length > 0 && ![_cfg.telegram isEqualToString:@"https://t.me/nothing6769"]) {
-        u = _cfg.telegram;
-    }
     if (!u.length) u = @"https://t.me/nothing6769";
-    [[UIApplication sharedApplication]openURL:[NSURL URLWithString:u] options:@{} completionHandler:nil];
+    NSURL *url = [NSURL URLWithString:u];
+    if (url) {
+        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+    }
 }
 -(void)showSettingsInfo{
     NSString *osVer = [UIDevice currentDevice].systemVersion;
