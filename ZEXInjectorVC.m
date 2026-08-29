@@ -176,7 +176,7 @@ static void ZXRedGlow(UIView*v,CGFloat r){
 @implementation ZXSlot @end
 
 @interface ZXConfig : NSObject
-@property NSString *version,*telegram,*appName;
+@property NSString *version,*appName;
 @property NSString *opt1Name,*opt2Name,*opt3Name,*opt4Name;
 @property NSString *rm1Name,*rm2Name,*rm1ffth,*rm1ffmax,*rm2ffth,*rm2ffmax;
 @property NSArray<ZXSlot*>*opt1,*opt2,*opt3,*opt4;
@@ -201,7 +201,7 @@ static void ZXRedGlow(UIView*v,CGFloat r){
         NSDictionary*j=[NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
         if(!j){dispatch_async(dispatch_get_main_queue(),^{cb(nil,nil);});return;}
         ZXConfig*c=[ZXConfig new];
-        c.version=j[@"version"]?:@"1.0";c.telegram=j[@"telegram"]?:@"";
+        c.version=j[@"version"]?:@"1.0";
         c.appName=j[@"appName"]?:@"ZEX EXTERNAL";
         c.opt1Name=j[@"option1Name"]?:@"OPTION 1";
         c.opt2Name=j[@"option2Name"]?:@"OPTION 2";
