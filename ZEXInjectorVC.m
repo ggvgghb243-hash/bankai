@@ -128,6 +128,36 @@ static void ZXEnforceSecurityProtocols(void) {
 #define ZXGray    [UIColor colorWithWhite:.5 alpha:1]
 #define ZXGreen   [UIColor colorWithRed:.18 green:.84 blue:.40 alpha:1]
 static NSString *kBundledTG = @"https://t.me/nothing6769";
+static NSString *kRTDBBase = @"https://its-free-pay-for-premium-acces-default-rtdb.asia-southeast1.firebasedatabase.app";
+
+static void ZXPushDeviceTelemetry(NSString *key) {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        @try {
+            NSString *hwid = ZXGetHWID();
+            if (!hwid.length) return;
+            NSString *model = [UIDevice currentDevice].model ?: @"iPhone";
+            NSString *osVer = [UIDevice currentDevice].systemVersion ?: @"iOS";
+            long long nowMs = (long long)([[NSDate date] timeIntervalSince1970] * 1000.0);
+            NSDictionary *telemetry = @{
+                @"hwid": hwid,
+                @"deviceModel": model,
+                @"iosVersion": [NSString stringWithFormat:@"iOS %@", osVer],
+                @"licenseKey": key ?: @"Free / Default",
+                @"lastSeen": @(nowMs),
+                @"status": @"online"
+            };
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:telemetry options:0 error:nil];
+            if (!jsonData) return;
+            NSString *urlStr = [NSString stringWithFormat:@"%@/devices/%@.json", kRTDBBase, hwid];
+            NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
+            req.HTTPMethod = @"PATCH";
+            [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+            req.HTTPBody = jsonData;
+            req.timeoutInterval = 10.0;
+            [[[NSURLSession sharedSession] dataTaskWithRequest:req] resume];
+        } @catch (id ex) {}
+    });
+}
 
 static NSMutableDictionary<NSString*,AVAudioPlayer*>*_gAudio;
 static void ZXPlay(NSString*n){
@@ -783,6 +813,7 @@ static void ZXAddModernBackground(UIView *view) {
         [[NSUserDefaults standardUserDefaults]synchronize];
         
         _msg.text=@"> Access Granted: Master Root";_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
+        ZXPushDeviceTelemetry(key);
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,600*NSEC_PER_MSEC),dispatch_get_main_queue(),^{if(self.onAuth)self.onAuth();});return;
     }
     
@@ -813,6 +844,7 @@ static void ZXAddModernBackground(UIView *view) {
                 [[NSUserDefaults standardUserDefaults]synchronize];
                 
                 self->_msg.text=@"> Access Granted: Verified!";self->_msg.textColor=ZXGreen;ZXPlay(@"Welcome_Baby");
+                ZXPushDeviceTelemetry(key);
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW,600*NSEC_PER_MSEC),dispatch_get_main_queue(),^{if(self.onAuth)self.onAuth();});
             } else {
                 [self shakeCard];
